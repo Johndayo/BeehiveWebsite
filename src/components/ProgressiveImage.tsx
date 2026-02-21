@@ -4,15 +4,16 @@ interface ProgressiveImageProps {
   src: string;
   alt: string;
   className?: string;
+  wrapperClassName?: string;
   loading?: 'eager' | 'lazy';
 }
 
-export default function ProgressiveImage({ src, alt, className = '', loading = 'lazy' }: ProgressiveImageProps) {
+export default function ProgressiveImage({ src, alt, className = '', wrapperClassName = 'relative w-full h-full', loading = 'lazy' }: ProgressiveImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
   return (
-    <div className="relative w-full h-full">
+    <div className={wrapperClassName}>
       {!loaded && !error && (
         <div className="absolute inset-0 bg-navy-100 animate-pulse" />
       )}
