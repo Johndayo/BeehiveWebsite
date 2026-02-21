@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Quote, MoveHorizontal } from 'lucide-react';
 import useScrollReveal from '../hooks/useScrollReveal';
 
 const TESTIMONIALS = [
@@ -59,6 +59,18 @@ export default function TestimonialsSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const headingRef = useScrollReveal<HTMLDivElement>();
   const carouselRef = useScrollReveal<HTMLDivElement>({ threshold: 0.05 });
+  const [showHint, setShowHint] = useState(true);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    function onScroll() {
+      setShowHint(false);
+    }
+    el.addEventListener('scroll', onScroll, { once: true, passive: true });
+    const timer = setTimeout(() => setShowHint(false), 4000);
+    return () => { el.removeEventListener('scroll', onScroll); clearTimeout(timer); };
+  }, []);
 
   function scroll(direction: 'left' | 'right') {
     if (!scrollRef.current) return;
@@ -154,6 +166,14 @@ export default function TestimonialsSection() {
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
+        <span
+          className={`flex items-center gap-1.5 text-xs text-navy-400 transition-opacity duration-500 ${
+            showHint ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <MoveHorizontal className="w-3.5 h-3.5" />
+          Swipe to see more
+        </span>
         <button
           onClick={() => scroll('right')}
           className="w-10 h-10 flex items-center justify-center rounded-full border border-navy-200 text-navy-500 hover:bg-brand-50 hover:text-brand-600 transition-colors"

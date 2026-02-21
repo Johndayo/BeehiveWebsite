@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import ProgressiveImage from './ProgressiveImage';
 import useScrollReveal from '../hooks/useScrollReveal';
 
 const SLIDES = [
@@ -42,6 +43,7 @@ export default function ShowcaseCarousel() {
   const [isPaused, setIsPaused] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const sectionRef = useScrollReveal<HTMLElement>({ threshold: 0.15 });
 
   const goTo = useCallback(
@@ -70,6 +72,22 @@ export default function ShowcaseCarousel() {
     };
   }, [current, isPaused, next]);
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prev();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        next();
+      }
+    }
+    el.addEventListener('keydown', handleKeyDown);
+    return () => el.removeEventListener('keydown', handleKeyDown);
+  }, [next, prev]);
+
   return (
     <section
       ref={sectionRef}
@@ -87,7 +105,7 @@ export default function ShowcaseCarousel() {
           </h2>
         </div>
 
-        <div className="relative">
+        <div ref={containerRef} tabIndex={0} className="relative outline-none" role="region" aria-label="Image carousel" aria-roledescription="carousel">
           <div className="relative aspect-[16/9] sm:aspect-[2.2/1] rounded-2xl overflow-hidden bg-navy-800">
             {SLIDES.map((slide, i) => (
               <div
@@ -98,7 +116,7 @@ export default function ShowcaseCarousel() {
                     : 'opacity-0 scale-105'
                 }`}
               >
-                <img
+                <ProgressiveImage
                   src={slide.src}
                   alt={slide.alt}
                   className="w-full h-full object-cover"

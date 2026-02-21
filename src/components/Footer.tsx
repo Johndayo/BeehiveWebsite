@@ -73,11 +73,22 @@ export default function Footer({ onNavigate, onScrollTo }: FooterProps) {
               Services
             </h4>
             <ul className="space-y-2.5">
-              <li className="text-sm text-navy-300">Training & Capacity Development</li>
-              <li className="text-sm text-navy-300">Management & Advisory Consulting</li>
-              <li className="text-sm text-navy-300">Governance & Compliance</li>
-              <li className="text-sm text-navy-300">Strategic Planning</li>
-              <li className="text-sm text-navy-300">Monitoring & Evaluation</li>
+              {[
+                'Training & Capacity Development',
+                'Management & Advisory Consulting',
+                'Governance & Compliance',
+                'Strategic Planning',
+                'Monitoring & Evaluation',
+              ].map((service) => (
+                <li key={service}>
+                  <button
+                    onClick={() => onScrollTo('services')}
+                    className="text-sm text-navy-300 hover:text-white transition-colors text-left"
+                  >
+                    {service}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
 

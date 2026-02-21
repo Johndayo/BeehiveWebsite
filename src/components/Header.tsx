@@ -3,7 +3,7 @@ import { Menu, X, ArrowRight } from 'lucide-react';
 import type { Page } from '../App';
 
 interface HeaderProps {
-  currentPage: Page;
+  currentPage: Page | '404';
   onNavigate: (page: Page) => void;
   onScrollTo: (sectionId: string) => void;
   isAdmin?: boolean;

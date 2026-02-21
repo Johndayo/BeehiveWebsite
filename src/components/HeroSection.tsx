@@ -1,4 +1,5 @@
 import { ArrowRight, FileDown } from 'lucide-react';
+import ProgressiveImage from './ProgressiveImage';
 import type { Page } from '../App';
 
 interface HeroSectionProps {
@@ -70,10 +71,10 @@ function HoneycombAccent() {
 export default function HeroSection({ onNavigate }: HeroSectionProps) {
   return (
     <section className="relative overflow-hidden min-h-[520px] sm:min-h-[560px] lg:min-h-[640px]">
-      <img
+      <ProgressiveImage
         src="https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"
         alt=""
-        className="absolute inset-0 w-full h-full object-cover"
+        className="w-full h-full object-cover"
         loading="eager"
       />
 
