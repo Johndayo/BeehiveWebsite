@@ -117,4 +117,9 @@
   .reveal-stagger.revealed > *:nth-child(4) { opacity: 1; transform: translateY(0); transition-delay: 240ms; }
   .reveal-stagger.revealed > *:nth-child(5) { opacity: 1; transform: translateY(0); transition-delay: 320ms; }
   .reveal-stagger.revealed > *:nth-child(6) { opacity: 1; transform: translateY(0); transition-delay: 400ms; }
+
+  @keyframes carousel-progress {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
 }

@@ -1,6 +1,7 @@
 import HeroSection from '../components/HeroSection';
 import TrustedSection from '../components/TrustedSection';
 import ServicesSection from '../components/ServicesSection';
+import ShowcaseCarousel from '../components/ShowcaseCarousel';
 import WhyBeehiveSection from '../components/WhyBeehiveSection';
 import SectorsSection from '../components/SectorsSection';
 import ClientExperienceSection from '../components/ClientExperienceSection';
@@ -18,6 +19,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       <HeroSection onNavigate={onNavigate} />
       <TrustedSection />
       <ServicesSection />
+      <ShowcaseCarousel />
       <WhyBeehiveSection />
       <SectorsSection />
       <ClientExperienceSection />
