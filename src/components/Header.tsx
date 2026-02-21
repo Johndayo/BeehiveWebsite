@@ -45,7 +45,7 @@ export default function Header({ currentPage, onNavigate, onScrollTo }: HeaderPr
             <img
               src="/Beehive_Associates_logo.png"
               alt="Beehive Associates"
-              className="h-40 sm:h-56 w-auto"
+              className="h-10 sm:h-14 w-auto"
             />
           </button>
 
