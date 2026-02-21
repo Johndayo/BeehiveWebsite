@@ -19,7 +19,7 @@ export default function Footer({ onNavigate, onScrollTo }: FooterProps) {
               <img
                 src="/Beehive_Associates_logo.png"
                 alt="Beehive Associates"
-                className="h-10 sm:h-14 w-auto brightness-0 invert"
+                className="h-40 sm:h-56 w-auto brightness-0 invert"
               />
             </button>
             <p className="text-sm text-navy-300 leading-relaxed mt-4 max-w-xs">
