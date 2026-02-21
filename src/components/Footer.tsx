@@ -101,7 +101,7 @@ export default function Footer({ onNavigate, onScrollTo }: FooterProps) {
                   className="flex items-start gap-2.5 text-sm text-navy-300 hover:text-white transition-colors"
                 >
                   <Phone className="w-4 h-4 mt-0.5 flex-shrink-0 text-navy-400" />
-                  08099442368
+                  +234-809-944-2368
                 </a>
               </li>
               <li className="flex items-start gap-2.5 text-sm text-navy-300">
