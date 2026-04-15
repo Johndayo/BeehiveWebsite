@@ -139,7 +139,7 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
             >
               <FileDown className="w-4 h-4" />
               Download Company Profile
-            </a>
+            </button>
           </div>
 
           <div

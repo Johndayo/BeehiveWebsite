@@ -5,34 +5,24 @@ import useScrollReveal from '../hooks/useScrollReveal';
 
 const SLIDES = [
   {
-    src: 'https://images.pexels.com/photos/3321795/pexels-photo-3321795.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    alt: 'Professional training seminar',
-    label: 'Training & Capacity Development',
+    src: '/IMG_1867.JPG',
+    alt: 'Trainer presenting to an engaged audience during team building and leadership training',
+    label: 'Team Building & Leadership Training',
   },
   {
-    src: 'https://images.pexels.com/photos/7495196/pexels-photo-7495196.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    alt: 'Team collaboration in modern office',
-    label: 'Team Collaboration',
+    src: '/IMG_1868.JPG',
+    alt: 'Large group training session with diverse participants in colorful attire for HR and management training',
+    label: 'HR & Management Training',
   },
   {
-    src: 'https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    alt: 'Strategic planning workshop',
-    label: 'Strategic Planning',
+    src: '/IMG_1869.JPG',
+    alt: 'Professional trainer presenting on team building with a projection screen for professional development',
+    label: 'Professional Development Training',
   },
   {
-    src: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    alt: 'Business advisory consulting session',
-    label: 'Management & Advisory Consulting',
-  },
-  {
-    src: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    alt: 'Leadership development meeting',
-    label: 'Leadership Development',
-  },
-  {
-    src: 'https://images.pexels.com/photos/3184287/pexels-photo-3184287.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    alt: 'Governance and compliance review',
-    label: 'Governance & Compliance',
+    src: '/IMG_3495.JPG',
+    alt: 'Intimate training session with presenter in white blazer focused on capacity building and consultation',
+    label: 'Capacity Building & Consultation',
   },
 ];
 

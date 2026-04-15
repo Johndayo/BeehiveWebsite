@@ -129,7 +129,7 @@ export default function Footer({ onNavigate, onScrollTo }: FooterProps) {
               </li>
               <li className="flex items-start gap-2.5 text-sm text-navy-300">
                 <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-navy-400" />
-                <span>63 Esslemont Road PO4 0ES, Portsmouth, United Kingdom</span>
+                <span>14 East Street, PO91AQ, Havant, United Kingdom</span>
               </li>
             </ul>
           </div>
