@@ -24,6 +24,36 @@ const SLIDES = [
     alt: 'Intimate training session with presenter in white blazer focused on capacity building and consultation',
     label: 'Capacity Building & Consultation',
   },
+  {
+    src: '/IMG_1859.JPG',
+    alt: 'Focused executive development session in a modern training environment',
+    label: 'Executive Leadership Development',
+  },
+  {
+    src: '/IMG_1871.JPG',
+    alt: 'High-impact facilitation with participants actively engaged in group discussion',
+    label: 'High-Impact Facilitation',
+  },
+  {
+    src: '/IMG_2290.JPG',
+    alt: 'Strategic planning workshop in progress with attentive participants',
+    label: 'Strategic Planning Workshop',
+  },
+  {
+    src: '/IMG_2293.JPG',
+    alt: 'Inclusive team learning session with diverse professionals collaborating',
+    label: 'Inclusive Team Learning',
+  },
+  {
+    src: '/IMG_3493.JPG',
+    alt: 'Insights-driven coaching experience led by a professional consultant',
+    label: 'Insights-Driven Coaching',
+  },
+  {
+    src: '/IMG_3496.JPG',
+    alt: 'Performance-focused training delivery in a premium event setting',
+    label: 'Performance-Focused Training',
+  },
 ];
 
 const AUTO_PLAY_INTERVAL = 5000;
