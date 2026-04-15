@@ -133,13 +133,14 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
               Request a Consultation
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </button>
-            <button
-              onClick={() => {}}
+            <a
+              href="/Beehive_Company_Profile.pdf"
+              download
               className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-white/5 text-white text-sm font-semibold rounded-lg border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-sm"
             >
               <FileDown className="w-4 h-4" />
               Download Company Profile
-            </button>
+            </a>
           </div>
 
           <div
