@@ -70,7 +70,7 @@ function HoneycombAccent() {
 
 export default function HeroSection({ onNavigate }: HeroSectionProps) {
   return (
-    <section className="relative overflow-hidden min-h-[520px] sm:min-h-[560px] lg:min-h-[640px]">
+    <section className="relative overflow-hidden min-h-[560px] md:min-h-[640px] lg:min-h-[720px] pb-16 sm:pb-20">
       <ProgressiveImage
         src="https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"
         alt=""
@@ -133,9 +133,8 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
               Request a Consultation
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </button>
-            <a
-              href="/Beehive_Company_Profile.pdf"
-              download
+            <button
+              onClick={() => {}}
               className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-white/5 text-white text-sm font-semibold rounded-lg border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-sm"
             >
               <FileDown className="w-4 h-4" />
@@ -144,19 +143,19 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
           </div>
 
           <div
-            className="flex items-center gap-6 mt-10 animate-fade-in-up"
+            className="flex flex-col gap-4 mt-10 animate-fade-in-up sm:flex-row sm:items-center sm:gap-6"
             style={{ animationDelay: '400ms', animationFillMode: 'both' }}
           >
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-white">150+</span>
               <span className="text-xs text-navy-300 leading-tight">Projects<br />Delivered</span>
             </div>
-            <div className="w-px h-8 bg-white/10" />
+            <div className="hidden sm:block w-px h-8 bg-white/10" />
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-white">30+</span>
               <span className="text-xs text-navy-300 leading-tight">Countries<br />Served</span>
             </div>
-            <div className="w-px h-8 bg-white/10" />
+            <div className="hidden sm:block w-px h-8 bg-white/10" />
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-white">95%</span>
               <span className="text-xs text-navy-300 leading-tight">Client<br />Satisfaction</span>
