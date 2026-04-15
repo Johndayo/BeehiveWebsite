@@ -3,15 +3,16 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import BackToTop from './components/BackToTop';
 import HomePage from './pages/HomePage';
+import TeamPage from './pages/TeamPage';
 import ConsultationPage from './pages/ConsultationPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import { useAuth } from './hooks/useAuth';
 
-export type Page = 'home' | 'services' | 'about' | 'consultation' | 'settings';
+export type Page = 'home' | 'team' | 'services' | 'about' | 'consultation' | 'settings';
 
-const VALID_PAGES: Page[] = ['home', 'services', 'about', 'consultation', 'settings'];
+const VALID_PAGES: Page[] = ['home', 'team', 'services', 'about', 'consultation', 'settings'];
 
 export default function App() {
   const { user, loading: authLoading, signIn, signOut, resetPassword } = useAuth();
@@ -89,6 +90,8 @@ export default function App() {
           ) : (
             <SettingsPage onSignOut={signOut} userEmail={user?.email} />
           )
+        ) : page === 'team' ? (
+          <TeamPage />
         ) : (
           <HomePage onNavigate={navigate} />
         )}

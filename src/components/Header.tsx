@@ -27,6 +27,7 @@ export default function Header({ currentPage, onNavigate, onScrollTo }: HeaderPr
   }, [currentPage]);
 
   const isHome = currentPage === 'home';
+  const isTeam = currentPage === 'team';
 
   return (
     <header
@@ -65,6 +66,16 @@ export default function Header({ currentPage, onNavigate, onScrollTo }: HeaderPr
               className="px-4 py-2 text-sm font-medium text-navy-600 hover:text-navy-900 hover:bg-navy-50/60 rounded-lg transition-colors"
             >
               Services
+            </button>
+            <button
+              onClick={() => onNavigate('team')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                isTeam
+                  ? 'text-navy-900 bg-navy-50'
+                  : 'text-navy-600 hover:text-navy-900 hover:bg-navy-50/60'
+              }`}
+            >
+              Team
             </button>
             <button
               onClick={() => onScrollTo('about')}
@@ -114,6 +125,14 @@ export default function Header({ currentPage, onNavigate, onScrollTo }: HeaderPr
               className="w-full text-left px-4 py-3 text-sm font-medium text-navy-600 hover:text-navy-900 hover:bg-navy-50 rounded-lg transition-colors"
             >
               Services
+            </button>
+            <button
+              onClick={() => { onNavigate('team'); setMobileOpen(false); }}
+              className={`w-full text-left px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                isTeam ? 'text-navy-900 bg-navy-50' : 'text-navy-600 hover:text-navy-900 hover:bg-navy-50'
+              }`}
+            >
+              Team
             </button>
             <button
               onClick={() => { onScrollTo('about'); setMobileOpen(false); }}

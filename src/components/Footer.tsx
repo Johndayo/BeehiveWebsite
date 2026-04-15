@@ -43,6 +43,14 @@ export default function Footer({ onNavigate, onScrollTo }: FooterProps) {
               </li>
               <li>
                 <button
+                  onClick={() => onNavigate('team')}
+                  className="text-sm text-navy-300 hover:text-white transition-colors"
+                >
+                  Team
+                </button>
+              </li>
+              <li>
+                <button
                   onClick={() => onScrollTo('services')}
                   className="text-sm text-navy-300 hover:text-white transition-colors"
                 >
