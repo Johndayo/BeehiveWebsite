@@ -13,6 +13,10 @@ import DecisionProcess from './steps/DecisionProcess';
 
 const TOTAL_STEPS = 5;
 
+// Apps Script web app endpoint for consultation form submissions
+// Replace the URL below if you deploy a new Apps Script web app.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiYQzXuw6yABitnLN5QVio_h6zEXR0IijQjtpv5sbSY5KJvMY21u91LWK8i4TBvcdMnQ/exec';
+
 function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -129,26 +133,43 @@ export default function ConsultationForm() {
     };
 
     try {
-      const sheetsUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-to-sheets`;
-      const res = await fetch(sheetsUrl, {
+      const res = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        const msg = body?.error || 'Something went wrong. Please try again or contact us directly.';
+        let msg = 'Something went wrong. Please try again or contact us directly.';
+
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const body = await res.json().catch(() => null);
+          if (body?.error) {
+            msg = body.error;
+          } else if (body) {
+            msg = JSON.stringify(body);
+          }
+        } else {
+          const text = await res.text().catch(() => '');
+          if (text) {
+            msg = text;
+          }
+        }
+
         setIsSubmitting(false);
         setSubmitError(msg);
         return;
       }
-    } catch {
+    } catch (error) {
       setIsSubmitting(false);
-      setSubmitError('Something went wrong. Please try again or contact us directly.');
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong. Please try again or contact us directly.'
+      );
       return;
     }
 
