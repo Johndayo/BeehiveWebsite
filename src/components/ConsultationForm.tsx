@@ -14,9 +14,8 @@ import DecisionProcess from './steps/DecisionProcess';
 
 const TOTAL_STEPS = 5;
 
-// Apps Script web app endpoint for consultation form submissions.
-// The configured webhook value is loaded from the app settings when available.
-const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiYQzXuw6yABitnLN5QVio_h6zEXR0IijQjtpv5sbSY5KJvMY21u91LWK8i4TBvcdMnQ/exec';
+const DEFAULT_APPS_SCRIPT_URL =
+  'https://script.google.com/macros/s/AKfycbyiYQzXuw6yABitnLN5QVio_h6zEXR0IijQjtpv5sbSY5KJvMY21u91LWK8i4TBvcdMnQ/exec';
 
 function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -199,7 +198,7 @@ export default function ConsultationForm() {
             return;
           }
         } catch {
-          // If response is not JSON, still allow success for Apps Script returning plain text.
+          // Apps Script may return plain text, so ignore parse failure on success.
         }
       }
     } catch (error) {
