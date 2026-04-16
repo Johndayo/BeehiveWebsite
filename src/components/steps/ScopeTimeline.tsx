@@ -33,7 +33,7 @@ export default function ScopeTimeline({ formData, errors, onChange }: Props) {
 
       <div>
         <label className="block text-sm font-medium text-navy-700 mb-1.5">
-          Desired Start Date
+          Desired Start Date <span className="text-sm font-normal text-navy-400">(optional)</span>
         </label>
         <input
           type="date"
@@ -45,7 +45,7 @@ export default function ScopeTimeline({ formData, errors, onChange }: Props) {
 
       <div>
         <label className="block text-sm font-medium text-navy-700 mb-1.5">
-          Proposed Timeline
+          Proposed Timeline <span className="text-sm font-normal text-navy-400">(optional)</span>
         </label>
         <select
           value={formData.timeline}

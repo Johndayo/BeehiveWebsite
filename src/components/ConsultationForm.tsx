@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Send, Loader2 } from 'lucide-react';
 import { initialFormData } from '../types/form';
 import type { FormData, StepErrors } from '../types/form';
+import { supabase } from '../lib/supabase';
 import ProgressBar from './ProgressBar';
 import StepIndicator from './StepIndicator';
 import SuccessView from './SuccessView';
@@ -13,9 +14,9 @@ import DecisionProcess from './steps/DecisionProcess';
 
 const TOTAL_STEPS = 5;
 
-// Apps Script web app endpoint for consultation form submissions
-// Replace the URL below if you deploy a new Apps Script web app.
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiYQzXuw6yABitnLN5QVio_h6zEXR0IijQjtpv5sbSY5KJvMY21u91LWK8i4TBvcdMnQ/exec';
+// Apps Script web app endpoint for consultation form submissions.
+// The configured webhook value is loaded from the app settings when available.
+const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiYQzXuw6yABitnLN5QVio_h6zEXR0IijQjtpv5sbSY5KJvMY21u91LWK8i4TBvcdMnQ/exec';
 
 function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -70,6 +71,23 @@ export default function ConsultationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [appsScriptUrl, setAppsScriptUrl] = useState('');
+
+  useEffect(() => {
+    async function loadWebhookUrl() {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'google_sheets_webhook')
+        .maybeSingle();
+
+      if (data?.value) {
+        setAppsScriptUrl(data.value);
+      }
+    }
+
+    loadWebhookUrl();
+  }, []);
 
   function handleChange(field: keyof FormData, value: string | string[]) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -116,7 +134,7 @@ export default function ConsultationForm() {
       country: formData.country,
       website: formData.website.trim(),
       employees: formData.employees,
-      service_areas: formData.serviceAreas,
+      service_areas: JSON.stringify(formData.serviceAreas),
       service_area_other: formData.serviceAreaOther.trim(),
       key_challenge: formData.keyChallenge.trim(),
       desired_outcome: formData.desiredOutcome.trim(),
@@ -126,42 +144,63 @@ export default function ConsultationForm() {
       budget_approved: formData.budgetApproved,
       contact_name: formData.contactName.trim(),
       contact_email: formData.contactEmail.trim(),
-      contact_phone: formData.contactPhone.trim(),
+      contact_phone: [formData.contactPhoneCountry, formData.contactPhone]
+        .filter(Boolean)
+        .join(' ')
+        .trim(),
       contact_role: formData.contactRole.trim(),
       approvers: formData.approvers.trim(),
       partners: formData.partners.trim(),
     };
 
+    const formBody = new URLSearchParams();
+    Object.entries(payload).forEach(([key, value]) => {
+      formBody.append(key, String(value ?? ''));
+    });
+
+    const submitUrl = appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
+    if (!submitUrl) {
+      setIsSubmitting(false);
+      setSubmitError('Submission endpoint is not configured. Please contact support.');
+      return;
+    }
+
     try {
-      const res = await fetch(APPS_SCRIPT_URL, {
+      const res = await fetch(submitUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         },
-        body: JSON.stringify(payload),
+        body: formBody.toString(),
       });
 
+      const text = await res.text().catch(() => '');
       if (!res.ok) {
         let msg = 'Something went wrong. Please try again or contact us directly.';
-
-        const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const body = await res.json().catch(() => null);
-          if (body?.error) {
-            msg = body.error;
-          } else if (body) {
-            msg = JSON.stringify(body);
-          }
-        } else {
-          const text = await res.text().catch(() => '');
-          if (text) {
+        if (text) {
+          try {
+            const body = JSON.parse(text);
+            msg = body?.error || JSON.stringify(body);
+          } catch {
             msg = text;
           }
         }
-
         setIsSubmitting(false);
         setSubmitError(msg);
         return;
+      }
+
+      if (text) {
+        try {
+          const body = JSON.parse(text);
+          if (body?.error) {
+            setIsSubmitting(false);
+            setSubmitError(body.error);
+            return;
+          }
+        } catch {
+          // If response is not JSON, still allow success for Apps Script returning plain text.
+        }
       }
     } catch (error) {
       setIsSubmitting(false);

@@ -58,7 +58,7 @@ export default function InstitutionalObjectives({ formData, errors, onChange }: 
 
       <div>
         <label className="block text-sm font-medium text-navy-700 mb-1.5">
-          Broader Reform Context
+          Broader Reform Context <span className="text-sm font-normal text-navy-400">(optional)</span>
         </label>
         <textarea
           value={formData.reformContext}

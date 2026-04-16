@@ -15,6 +15,7 @@ export interface FormData {
   budgetApproved: string;
   contactName: string;
   contactEmail: string;
+  contactPhoneCountry: string;
   contactPhone: string;
   contactRole: string;
   approvers: string;
@@ -38,6 +39,7 @@ export const initialFormData: FormData = {
   budgetApproved: '',
   contactName: '',
   contactEmail: '',
+  contactPhoneCountry: '',
   contactPhone: '',
   contactRole: '',
   approvers: '',

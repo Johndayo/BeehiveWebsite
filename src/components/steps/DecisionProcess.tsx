@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { AlertCircle, Phone } from 'lucide-react';
 import type { FormData, StepErrors } from '../../types/form';
+import SearchableSelect from '../SearchableSelect';
 import { countryDialCodes } from '../../data/countryCodes';
+
+const PHONE_CODE_OPTIONS = Object.entries(countryDialCodes)
+  .map(([country, code]) => `${code} — ${country}`)
+  .sort((a, b) => a.localeCompare(b));
 
 interface Props {
   formData: FormData;
@@ -36,6 +41,12 @@ export default function DecisionProcess({ formData, errors, onChange }: Props) {
   const showCodeHint =
     suggestedCode &&
     phoneValue.length === 0;
+
+  const selectedPhoneCodeLabel = formData.contactPhoneCountry
+    ? `${formData.contactPhoneCountry} — ${
+        Object.entries(countryDialCodes).find(([, code]) => code === formData.contactPhoneCountry)?.[0] ?? ''
+      }`
+    : '';
 
   function handleApplyCode() {
     onChange('contactPhone', suggestedCode + ' ');
@@ -107,14 +118,30 @@ export default function DecisionProcess({ formData, errors, onChange }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-navy-700 mb-1.5">
-              Phone Number
+              Country Code <span className="text-sm font-normal text-navy-400">(optional)</span>
+            </label>
+            <SearchableSelect
+              label="Country Code (optional)"
+              options={PHONE_CODE_OPTIONS}
+              value={selectedPhoneCodeLabel}
+              onChange={(value) => {
+                const selectedCode = value.split(' — ')[0] || value;
+                onChange('contactPhoneCountry', selectedCode);
+              }}
+              placeholder="Search country code"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-navy-700 mb-1.5">
+              Phone Number <span className="text-sm font-normal text-navy-400">(optional)</span>
             </label>
             <input
               type="tel"
               value={formData.contactPhone}
               onChange={(e) => onChange('contactPhone', e.target.value)}
               onBlur={() => setPhoneTouched(true)}
-              placeholder={suggestedCode ? `${suggestedCode} ...` : '+1 (555) 000-0000'}
+              placeholder="e.g. 555 123 4567"
               className={`w-full px-4 py-3 bg-white border rounded-lg text-navy-900 placeholder:text-navy-300 transition-colors ${
                 showPhoneError
                   ? 'border-error-400 ring-1 ring-error-200'
@@ -144,19 +171,19 @@ export default function DecisionProcess({ formData, errors, onChange }: Props) {
               </button>
             )}
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1.5">
-              Role / Title
-            </label>
-            <input
-              type="text"
-              value={formData.contactRole}
-              onChange={(e) => onChange('contactRole', e.target.value)}
-              placeholder="e.g. Director of Operations"
-              className="w-full px-4 py-3 bg-white border border-navy-200 rounded-lg text-navy-900 placeholder:text-navy-300 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200 transition-colors"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-navy-700 mb-1.5">
+            Role / Title <span className="text-sm font-normal text-navy-400">(optional)</span>
+          </label>
+          <input
+            type="text"
+            value={formData.contactRole}
+            onChange={(e) => onChange('contactRole', e.target.value)}
+            placeholder="e.g. Director of Operations"
+            className="w-full px-4 py-3 bg-white border border-navy-200 rounded-lg text-navy-900 placeholder:text-navy-300 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200 transition-colors"
+          />
         </div>
       </div>
 
@@ -168,7 +195,7 @@ export default function DecisionProcess({ formData, errors, onChange }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-navy-700 mb-1.5">
-              Key Approvers
+              Key Approvers <span className="text-sm font-normal text-navy-400">(optional)</span>
             </label>
             <textarea
               value={formData.approvers}
@@ -181,7 +208,7 @@ export default function DecisionProcess({ formData, errors, onChange }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-navy-700 mb-1.5">
-              External Partners
+              External Partners <span className="text-sm font-normal text-navy-400">(optional)</span>
             </label>
             <textarea
               value={formData.partners}

@@ -4,7 +4,13 @@ import { supabase } from '../lib/supabase';
 
 const APPS_SCRIPT_CODE = `function doPost(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = JSON.parse(e.postData.contents);
+  var data = e.parameter || {};
+
+  try {
+    data.service_areas = data.service_areas ? JSON.parse(data.service_areas) : [];
+  } catch (err) {
+    data.service_areas = [];
+  }
 
   if (sheet.getLastRow() === 0) {
     sheet.appendRow([
@@ -40,7 +46,8 @@ const APPS_SCRIPT_CODE = `function doPost(e) {
 
   return ContentService
     .createTextOutput(JSON.stringify({ status: 'ok' }))
-    .setMimeType(ContentService.MimeType.JSON);
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*');
 }`;
 
 export default function GoogleSheetsSettings() {
