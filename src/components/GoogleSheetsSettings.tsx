@@ -3,9 +3,11 @@ import { FileSpreadsheet, Save, Loader2, CheckCircle, ExternalLink, AlertCircle,
 import { supabase } from '../lib/supabase';
 
 const APPS_SCRIPT_CODE = `function doPost(e) {
+  // This form sends URL-encoded fields with the exact keys below.
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var data = e.parameter || {};
 
+  // service_areas is sent as a JSON string from the web form.
   try {
     data.service_areas = data.service_areas ? JSON.parse(data.service_areas) : [];
   } catch (err) {

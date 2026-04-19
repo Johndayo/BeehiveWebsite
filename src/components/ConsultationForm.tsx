@@ -143,10 +143,7 @@ export default function ConsultationForm() {
       budget_approved: formData.budgetApproved,
       contact_name: formData.contactName.trim(),
       contact_email: formData.contactEmail.trim(),
-      contact_phone: [formData.contactPhoneCountry, formData.contactPhone]
-        .filter(Boolean)
-        .join(' ')
-        .trim(),
+      contact_phone: formData.contactPhone.trim(),
       contact_role: formData.contactRole.trim(),
       approvers: formData.approvers.trim(),
       partners: formData.partners.trim(),
@@ -157,7 +154,7 @@ export default function ConsultationForm() {
       formBody.append(key, String(value ?? ''));
     });
 
-    const submitUrl = appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
+    const submitUrl = (appsScriptUrl?.trim() || DEFAULT_APPS_SCRIPT_URL);
     if (!submitUrl) {
       setIsSubmitting(false);
       setSubmitError('Submission endpoint is not configured. Please contact support.');
@@ -167,7 +164,10 @@ export default function ConsultationForm() {
     try {
       const res = await fetch(submitUrl, {
         method: 'POST',
+        mode: 'cors',
+        redirect: 'follow',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         },
         body: formBody.toString(),

@@ -63,7 +63,7 @@ export default function OrganizationInfo({ formData, errors, onChange }: Props) 
 
       <div>
         <label className="block text-sm font-medium text-navy-700 mb-1.5">
-          Industry / Sector <span className="text-sm font-normal text-navy-400">(optional)</span>
+          Industry / Sector
         </label>
         <select
           value={formData.industry}
@@ -93,7 +93,7 @@ export default function OrganizationInfo({ formData, errors, onChange }: Props) 
       )}
 
       <SearchableSelect
-        label="Country (optional)"
+        label="Country"
         options={countries}
         value={formData.country}
         onChange={(val) => onChange('country', val)}
@@ -115,7 +115,7 @@ export default function OrganizationInfo({ formData, errors, onChange }: Props) 
 
       <div>
         <label className="block text-sm font-medium text-navy-700 mb-1.5">
-          Number of Employees <span className="text-sm font-normal text-navy-400">(optional)</span>
+          Number of Employees
         </label>
         <select
           value={formData.employees}

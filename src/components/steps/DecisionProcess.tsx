@@ -1,12 +1,7 @@
-import { useState } from 'react';
-import { AlertCircle, Phone } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AlertCircle } from 'lucide-react';
 import type { FormData, StepErrors } from '../../types/form';
-import SearchableSelect from '../SearchableSelect';
 import { countryDialCodes } from '../../data/countryCodes';
-
-const PHONE_CODE_OPTIONS = Object.entries(countryDialCodes)
-  .map(([country, code]) => `${code} — ${country}`)
-  .sort((a, b) => a.localeCompare(b));
 
 interface Props {
   formData: FormData;
@@ -35,22 +30,21 @@ export default function DecisionProcess({ formData, errors, onChange }: Props) {
   const showPhoneError =
     phoneTouched && phoneValue.length > 0 && !isValidPhone(phoneValue);
 
-  const suggestedCode = formData.country
-    ? countryDialCodes[formData.country]
-    : null;
-  const showCodeHint =
-    suggestedCode &&
-    phoneValue.length === 0;
+  const [selectedCountryCode, setSelectedCountryCode] = useState('+1');
 
-  const selectedPhoneCodeLabel = formData.contactPhoneCountry
-    ? `${formData.contactPhoneCountry} — ${
-        Object.entries(countryDialCodes).find(([, code]) => code === formData.contactPhoneCountry)?.[0] ?? ''
-      }`
-    : '';
+  useEffect(() => {
+    const trimmedPhone = phoneValue;
+    if (trimmedPhone.startsWith('+')) {
+      const firstSegment = trimmedPhone.split(/\s+/)[0];
+      setSelectedCountryCode(firstSegment);
+    } else {
+      setSelectedCountryCode('+1');
+    }
+  }, [phoneValue]);
 
-  function handleApplyCode() {
-    onChange('contactPhone', suggestedCode + ' ');
-  }
+  const currentPhonePart = phoneValue.startsWith('+')
+    ? phoneValue.split(/\s+/).slice(1).join(' ')
+    : phoneValue;
 
   return (
     <div className="space-y-6 step-transition">
@@ -118,72 +112,58 @@ export default function DecisionProcess({ formData, errors, onChange }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-navy-700 mb-1.5">
-              Country Code <span className="text-sm font-normal text-navy-400">(optional)</span>
+              Phone Number <span className="text-sm font-normal text-navy-400">(optional)</span>
             </label>
-            <SearchableSelect
-              label="Country Code (optional)"
-              options={PHONE_CODE_OPTIONS}
-              value={selectedPhoneCodeLabel}
-              onChange={(value) => {
-                const selectedCode = value.split(' — ')[0] || value;
-                onChange('contactPhoneCountry', selectedCode);
-              }}
-              placeholder="Search country code"
-            />
+            <div className="flex">
+              <select
+                value={selectedCountryCode}
+                onChange={(e) => {
+                  const newCode = e.target.value || '+1';
+                  setSelectedCountryCode(newCode);
+                  onChange('contactPhone', currentPhonePart ? `${newCode} ${currentPhonePart}`.trim() : '');
+                }}
+                className="px-3 py-3 bg-white border border-r-0 border-navy-200 rounded-l-lg text-navy-900 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200 transition-colors appearance-none"
+              >
+                {Object.entries(countryDialCodes).map(([country, code]) => (
+                  <option key={country} value={code}>{code}</option>
+                ))}
+              </select>
+              <input
+                type="tel"
+                value={currentPhonePart}
+                onChange={(e) => {
+                  const phonePart = e.target.value;
+                  onChange('contactPhone', phonePart ? `${selectedCountryCode} ${phonePart}`.trim() : '');
+                }}
+                onBlur={() => setPhoneTouched(true)}
+                placeholder="555 123 4567"
+                className={`flex-1 px-4 py-3 bg-white border rounded-r-lg text-navy-900 placeholder:text-navy-300 transition-colors ${
+                  showPhoneError
+                    ? 'border-error-400 ring-1 ring-error-200'
+                    : 'border-navy-200 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200'
+                }`}
+              />
+            </div>
+            {showPhoneError && (
+              <p className="mt-1.5 flex items-center gap-1.5 text-sm text-error-500">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                Please enter a valid phone number
+              </p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-navy-700 mb-1.5">
-              Phone Number <span className="text-sm font-normal text-navy-400">(optional)</span>
+              Role / Title
             </label>
             <input
-              type="tel"
-              value={formData.contactPhone}
-              onChange={(e) => onChange('contactPhone', e.target.value)}
-              onBlur={() => setPhoneTouched(true)}
-              placeholder="e.g. 555 123 4567"
-              className={`w-full px-4 py-3 bg-white border rounded-lg text-navy-900 placeholder:text-navy-300 transition-colors ${
-                showPhoneError
-                  ? 'border-error-400 ring-1 ring-error-200'
-                  : 'border-navy-200 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200'
-              }`}
+              type="text"
+              value={formData.contactRole}
+              onChange={(e) => onChange('contactRole', e.target.value)}
+              placeholder="e.g. Director of Operations"
+              className="w-full px-4 py-3 bg-white border border-navy-200 rounded-lg text-navy-900 placeholder:text-navy-300 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200 transition-colors"
             />
-            {showPhoneError && (
-              <p className="mt-1.5 flex items-center gap-1.5 text-sm text-error-500">
-                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                Please enter a valid phone number with country code
-              </p>
-            )}
-            {showCodeHint && (
-              <button
-                type="button"
-                onClick={handleApplyCode}
-                className="mt-1.5 flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-700 transition-colors group"
-              >
-                <Phone className="w-3.5 h-3.5 text-navy-400 group-hover:text-navy-600 transition-colors" />
-                Country code for {formData.country}:
-                <span className="font-medium text-navy-700 bg-navy-50 px-1.5 py-0.5 rounded">
-                  {suggestedCode}
-                </span>
-                <span className="text-xs text-navy-400 group-hover:text-brand-500 transition-colors">
-                  click to apply
-                </span>
-              </button>
-            )}
           </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-navy-700 mb-1.5">
-            Role / Title <span className="text-sm font-normal text-navy-400">(optional)</span>
-          </label>
-          <input
-            type="text"
-            value={formData.contactRole}
-            onChange={(e) => onChange('contactRole', e.target.value)}
-            placeholder="e.g. Director of Operations"
-            className="w-full px-4 py-3 bg-white border border-navy-200 rounded-lg text-navy-900 placeholder:text-navy-300 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200 transition-colors"
-          />
         </div>
       </div>
 
