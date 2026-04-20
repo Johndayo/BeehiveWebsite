@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 import type { FormData, StepErrors } from '../../types/form';
-import { countryDialCodes } from '../../data/countryCodes';
+import PhoneCountrySelect from '../PhoneCountrySelect';
 
 interface Props {
   formData: FormData;
@@ -30,21 +30,7 @@ export default function DecisionProcess({ formData, errors, onChange }: Props) {
   const showPhoneError =
     phoneTouched && phoneValue.length > 0 && !isValidPhone(phoneValue);
 
-  const [selectedCountryCode, setSelectedCountryCode] = useState('+1');
-
-  useEffect(() => {
-    const trimmedPhone = phoneValue;
-    if (trimmedPhone.startsWith('+')) {
-      const firstSegment = trimmedPhone.split(/\s+/)[0];
-      setSelectedCountryCode(firstSegment);
-    } else {
-      setSelectedCountryCode('+1');
-    }
-  }, [phoneValue]);
-
-  const currentPhonePart = phoneValue.startsWith('+')
-    ? phoneValue.split(/\s+/).slice(1).join(' ')
-    : phoneValue;
+  
 
   return (
     <div className="space-y-6 step-transition">
@@ -114,36 +100,12 @@ export default function DecisionProcess({ formData, errors, onChange }: Props) {
             <label className="block text-sm font-medium text-navy-700 mb-1.5">
               Phone Number <span className="text-sm font-normal text-navy-400">(optional)</span>
             </label>
-            <div className="flex">
-              <select
-                value={selectedCountryCode}
-                onChange={(e) => {
-                  const newCode = e.target.value || '+1';
-                  setSelectedCountryCode(newCode);
-                  onChange('contactPhone', currentPhonePart ? `${newCode} ${currentPhonePart}`.trim() : '');
-                }}
-                className="px-3 py-3 bg-white border border-r-0 border-navy-200 rounded-l-lg text-navy-900 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200 transition-colors appearance-none"
-              >
-                {Object.entries(countryDialCodes).map(([country, code]) => (
-                  <option key={country} value={code}>{code}</option>
-                ))}
-              </select>
-              <input
-                type="tel"
-                value={currentPhonePart}
-                onChange={(e) => {
-                  const phonePart = e.target.value;
-                  onChange('contactPhone', phonePart ? `${selectedCountryCode} ${phonePart}`.trim() : '');
-                }}
-                onBlur={() => setPhoneTouched(true)}
-                placeholder="555 123 4567"
-                className={`flex-1 px-4 py-3 bg-white border rounded-r-lg text-navy-900 placeholder:text-navy-300 transition-colors ${
-                  showPhoneError
-                    ? 'border-error-400 ring-1 ring-error-200'
-                    : 'border-navy-200 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200'
-                }`}
-              />
-            </div>
+            <PhoneCountrySelect
+              value={formData.contactPhone}
+              onChange={(val) => onChange('contactPhone', val)}
+              onBlur={() => setPhoneTouched(true)}
+              placeholder="555 123 4567"
+            />
             {showPhoneError && (
               <p className="mt-1.5 flex items-center gap-1.5 text-sm text-error-500">
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />

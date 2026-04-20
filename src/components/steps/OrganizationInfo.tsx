@@ -1,5 +1,5 @@
 import type { FormData, StepErrors } from '../../types/form';
-import SearchableSelect from '../SearchableSelect';
+import CountrySelect from '../CountrySelect';
 import { countries } from '../../data/countries';
 
 interface Props {
@@ -92,9 +92,8 @@ export default function OrganizationInfo({ formData, errors, onChange }: Props) 
         </div>
       )}
 
-      <SearchableSelect
+      <CountrySelect
         label="Country"
-        options={countries}
         value={formData.country}
         onChange={(val) => onChange('country', val)}
         placeholder="Select a country"
