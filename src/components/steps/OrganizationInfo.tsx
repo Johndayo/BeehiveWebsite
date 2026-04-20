@@ -1,6 +1,5 @@
 import type { FormData, StepErrors } from '../../types/form';
 import CountrySelect from '../CountrySelect';
-import { countries } from '../../data/countries';
 
 interface Props {
   formData: FormData;

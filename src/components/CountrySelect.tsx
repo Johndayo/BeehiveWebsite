@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ChevronDown, Search, X } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 import { countries } from '../data/countries';
 
 interface Props {
