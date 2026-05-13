@@ -1,8 +1,16 @@
+<<<<<<< HEAD
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Send, Loader2 } from 'lucide-react';
 import { initialFormData } from '../types/form';
 import type { FormData, StepErrors } from '../types/form';
 import { supabase } from '../lib/supabase';
+=======
+import { useState, useEffect } from 'react';
+import { ArrowLeft, ArrowRight, Send, Loader2 } from 'lucide-react';
+import { initialFormData } from '../types/form';
+import type { FormData, StepErrors } from '../types/form';
+import { apiClient } from '../lib/secure-api';
+>>>>>>> 0efd128 (feat(security): implement critical security hardening and vulnerability remediation)
 import ProgressBar from './ProgressBar';
 import StepIndicator from './StepIndicator';
 import SuccessView from './SuccessView';
@@ -162,6 +170,7 @@ export default function ConsultationForm() {
     }
 
     try {
+<<<<<<< HEAD
       const res = await fetch(submitUrl, {
         method: 'POST',
         mode: 'cors',
@@ -184,10 +193,19 @@ export default function ConsultationForm() {
             msg = text;
           }
         }
+=======
+      // ✅ Use secure backend API instead of direct Supabase call
+      // No credentials exposed to frontend
+      const result = await apiClient.submitConsultation(payload);
+
+      if (!result.success) {
+        const msg = result.message || 'Submission failed. Please try again.';
+>>>>>>> 0efd128 (feat(security): implement critical security hardening and vulnerability remediation)
         setIsSubmitting(false);
         setSubmitError(msg);
         return;
       }
+<<<<<<< HEAD
 
       if (text) {
         try {
@@ -208,6 +226,12 @@ export default function ConsultationForm() {
           ? error.message
           : 'Something went wrong. Please try again or contact us directly.'
       );
+=======
+    } catch (error) {
+      setIsSubmitting(false);
+      const errorMessage = error instanceof Error ? error.message : 'Network error. Please try again.';
+      setSubmitError(errorMessage);
+>>>>>>> 0efd128 (feat(security): implement critical security hardening and vulnerability remediation)
       return;
     }
 

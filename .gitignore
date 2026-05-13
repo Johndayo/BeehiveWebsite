@@ -20,4 +20,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Environment variables (CRITICAL: Never commit)
 .env
+.env.local
+.env.*.local
+.env.production.local
+.env.development.local
+.env.test.local
+
+# Secrets
+.env*.key
+.vaultignore
+.password

@@ -9,6 +9,7 @@ import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import { useAuth } from './hooks/useAuth';
+import { apiClient } from './lib/secure-api';
 
 export type Page = 'home' | 'team' | 'services' | 'about' | 'consultation' | 'settings';
 
@@ -23,6 +24,11 @@ export default function App() {
     if (VALID_PAGES.includes(hash as Page)) return hash as Page;
     return '404';
   });
+
+  // Initialize security features
+  useEffect(() => {
+    apiClient.initCsrf();
+  }, []);
 
   useEffect(() => {
     function onHashChange() {
