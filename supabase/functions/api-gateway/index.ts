@@ -370,6 +370,60 @@ async function handleConsultationSubmit(
       );
     }
 
+    // 🔒 Send to Google Sheets webhook if configured
+    try {
+      const webhookResponse = await fetch(`${supabaseUrl}/rest/v1/app_settings?key=eq.google_sheets_webhook`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${supabaseKey}`,
+          apikey: supabaseKey,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (webhookResponse.ok) {
+        const settings = await webhookResponse.json();
+        if (Array.isArray(settings) && settings.length > 0 && settings[0].value) {
+          const webhookUrl = settings[0].value;
+
+          // Validate webhook URL to prevent SSRF
+          if (isValidUrl(webhookUrl) && webhookUrl.includes("script.google.com")) {
+            try {
+              // Send to Google Sheets with timeout
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+              await fetch(webhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+                redirect: "error",
+                signal: controller.signal,
+                credentials: "omit",
+              });
+
+              clearTimeout(timeoutId);
+              console.log("[API] Google Sheets webhook sent successfully");
+            } catch (webhookErr) {
+              console.warn(
+                "[API] Google Sheets webhook failed:",
+                webhookErr instanceof Error ? webhookErr.message : "Unknown error"
+              );
+              // Don't fail the submission if webhook fails
+            }
+          } else {
+            console.warn("[API] Invalid Google Sheets webhook URL");
+          }
+        }
+      }
+    } catch (settingsErr) {
+      console.warn(
+        "[API] Failed to fetch webhook settings:",
+        settingsErr instanceof Error ? settingsErr.message : "Unknown error"
+      );
+      // Don't fail the submission if settings fetch fails
+    }
+
     // Success
     console.log("[API] Submission success:", payload.contact_email);
 
