@@ -49,10 +49,7 @@ export default function SEO({
     if (description) {
       updateMetaTag('description', description);
       updateMetaTag('og:description', ogDescription || description);
-      updateMetaTag(
-        'twitter:description',
-        twitterDescription || description
-      );
+      updateMetaTag('twitter:description', twitterDescription || description);
     }
 
     // Update keywords
@@ -77,38 +74,18 @@ export default function SEO({
     updateMetaTag('robots', robots);
 
     // Update canonical URL
-    const canonicalLink: HTMLLinkElement | null =
-      document.querySelector('link[rel="canonical"]');
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
     if (!canonicalLink) {
-      const newCanonicalLink = document.createElement(
-        'link'
-      ) as HTMLLinkElement;
-      newCanonicalLink.rel = 'canonical';
-      newCanonicalLink.href = canonicalUrl;
-      document.head.appendChild(newCanonicalLink);
-    } else {
-      canonicalLink.href = canonicalUrl;
+      canonicalLink = document.createElement('link');
+document.querySelector<HTMLLinkElement>('link[rel="canonical"]');      document.head.appendChild(canonicalLink);
     }
+    canonicalLink.setAttribute('href', canonicalUrl);
 
     // Add structured data (JSON-LD)
     if (schemaData) {
       addStructuredData(schemaData);
     }
-  }, [
-    title,
-    description,
-    keywords,
-    ogTitle,
-    ogDescription,
-    ogImage,
-    ogUrl,
-    twitterTitle,
-    twitterDescription,
-    twitterImage,
-    canonicalUrl,
-    schemaData,
-    robots,
-  ]);
+  }, [title, description, keywords, ogTitle, ogDescription, ogImage, ogUrl, twitterTitle, twitterDescription, twitterImage, canonicalUrl, schemaData, robots]);
 
   return null;
 }
@@ -117,11 +94,9 @@ export default function SEO({
  * Helper function to update or create meta tags
  */
 function updateMetaTag(name: string, content: string): void {
-  let tag = document.querySelector(
-    `meta[name="${name}"], meta[property="${name}"]`
-  ) as HTMLMetaElement | null;
+  let tag = document.querySelector(`meta[name="${name}"], meta[property="${name}"]`);
   if (!tag) {
-    tag = document.createElement('meta') as HTMLMetaElement;
+    tag = document.createElement('meta');
     const isProperty = name.startsWith('og:') || name.startsWith('twitter:');
     if (isProperty) {
       tag.setAttribute('property', name);
@@ -138,22 +113,29 @@ function updateMetaTag(name: string, content: string): void {
  */
 function addStructuredData(data: SchemaData | SchemaData[]): void {
   const dataArray = Array.isArray(data) ? data : [data];
-
+  
   // Remove existing schema.org scripts
-  const existingScripts = document.querySelectorAll(
-    'script[type="application/ld+json"]'
-  );
-  existingScripts.forEach((script) => {
+  const existingScripts = document.querySelectorAll('script[type="application/ld+json"]');
+  existingScripts.forEach(script => {
     if (script.innerHTML.includes('"@context"')) {
       script.remove();
     }
   });
 
   // Add new schema.org scripts
-  dataArray.forEach((schemaItem) => {
+  dataArray.forEach(schemaItem => {
     const script = document.createElement('script');
     script.type = 'application/ld+json';
     script.innerHTML = JSON.stringify(schemaItem);
     document.head.appendChild(script);
   });
+}
+
+/**
+ * Hook to easily set SEO for a page
+ */
+export function useSEO(seoProps: SEOComponentProps) {
+  useEffect(() => {
+    // Component handles updates via its own useEffect
+  }, [seoProps]);
 }
