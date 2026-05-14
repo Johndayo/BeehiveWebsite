@@ -199,7 +199,7 @@ export const sessionManager = {
   /**
    * Generates a unique session ID
    */
-  private generateSessionId(): string {
+  generateSessionId(): string {
     const array = new Uint8Array(16);
     crypto.getRandomValues(array);
     return Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('');
@@ -238,7 +238,7 @@ export const sessionManager = {
 // TOKEN REFRESH
 // ============================================================================
 
-let tokenRefreshTimeout: NodeJS.Timeout | null = null;
+let tokenRefreshTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export const tokenRefresh = {
   /**

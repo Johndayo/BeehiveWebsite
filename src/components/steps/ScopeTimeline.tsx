@@ -4,7 +4,7 @@ import type { FormData, StepErrors } from '../../types/form';
 interface Props {
   formData: FormData;
   errors: StepErrors;
-  onChange: (field: keyof FormData, value: string) => void;
+  onChange: (field: keyof FormData, value: string | boolean) => void;
 }
 
 const TIMELINES = [
@@ -16,9 +16,8 @@ const TIMELINES = [
 ];
 
 const BUDGET_OPTIONS = [
-  { value: 'yes', label: 'Yes', description: 'Budget is approved and allocated' },
-  { value: 'no', label: 'Not Yet', description: 'Budget has not been approved' },
-  { value: 'in-review', label: 'In Review', description: 'Pending approval process' },
+  { value: true, label: 'Yes', description: 'Budget is approved and allocated' },
+  { value: false, label: 'Not Yet', description: 'Budget has not been approved' },
 ];
 
 export default function ScopeTimeline({ formData, errors, onChange }: Props) {
@@ -64,11 +63,11 @@ export default function ScopeTimeline({ formData, errors, onChange }: Props) {
           Budget Approved <span className="text-brand-500">*</span>
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {BUDGET_OPTIONS.map((opt) => {
+          {BUDGET_OPTIONS.map((opt, idx) => {
             const isSelected = formData.budgetApproved === opt.value;
             return (
               <button
-                key={opt.value}
+                key={idx}
                 type="button"
                 onClick={() => onChange('budgetApproved', opt.value)}
                 className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 ${

@@ -12,7 +12,7 @@ export interface FormData {
   reformContext: string;
   startDate: string;
   timeline: string;
-  budgetApproved: string;
+  budgetApproved: boolean;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -35,7 +35,7 @@ export const initialFormData: FormData = {
   reformContext: '',
   startDate: '',
   timeline: '',
-  budgetApproved: '',
+  budgetApproved: false,
   contactName: '',
   contactEmail: '',
   contactPhone: '',

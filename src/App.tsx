@@ -9,7 +9,7 @@ import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import { useAuth } from './hooks/useAuth';
-import { apiClient } from './lib/secure-api';
+import { csrf } from './lib/csrf';
 
 export type Page = 'home' | 'team' | 'services' | 'about' | 'consultation' | 'settings';
 
@@ -27,7 +27,10 @@ export default function App() {
 
   // Initialize security features
   useEffect(() => {
-    apiClient.initCsrf();
+    // CSRF protection initializes automatically
+    csrf.initialize().catch((err) =>
+      console.error('[App] CSRF initialization failed:', err)
+    );
   }, []);
 
   useEffect(() => {

@@ -1,16 +1,54 @@
 /**
  * 🔒 SECURE API CLIENT
- * All requests proxied through backend - NO credentials exposed to frontend
- * Service role key kept server-side only
+ * All requests proxied through backend API Gateway
+ * - NO credentials exposed to frontend
+ * - Service role key kept server-side only
+ * - CSRF protection on all state-changing operations
+ * - Input sanitization server-side
+ * - Rate limiting server-side
  */
+
+import { csrf } from './csrf';
+
+export interface ConsultationPayload {
+  organization_name: string;
+  industry: string;
+  industry_other: string;
+  country: string;
+  website: string;
+  employees: string;
+  service_areas: string[];
+  service_area_other: string;
+  key_challenge: string;
+  desired_outcome: string;
+  reform_context: string;
+  start_date: string;
+  timeline: string;
+  budget_approved: boolean;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+  contact_role: string;
+  approvers: string;
+  partners: string;
+  csrf_token?: string;
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+}
 
 export class SecureApiClient {
   private baseUrl: string;
-  private csrfToken: string | null = null;
+  private apiGatewayUrl: string;
 
-  constructor(baseUrl: string = '') {
-    // Use relative paths - no hardcoding
+  constructor(baseUrl: string = '', apiGatewayUrl: string = '') {
     this.baseUrl = baseUrl || this.detectBaseUrl();
+    // API gateway can be different subdomain/service
+    this.apiGatewayUrl = apiGatewayUrl || '/api';
   }
 
   private detectBaseUrl(): string {
@@ -21,53 +59,13 @@ export class SecureApiClient {
   }
 
   /**
-   * Initialize CSRF protection
-   */
-  initCsrf(): void {
-    const token = this.generateCsrfToken();
-    this.csrfToken = token;
-    sessionStorage.setItem('csrf_token', token);
-  }
-
-  /**
-   * Generate cryptographically secure CSRF token
-   */
-  private generateCsrfToken(): string {
-    const bytes = new Uint8Array(32);
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-      crypto.getRandomValues(bytes);
-    } else {
-      // Fallback for older browsers
-      for (let i = 0; i < bytes.length; i++) {
-        bytes[i] = Math.floor(Math.random() * 256);
-      }
-    }
-    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  /**
-   * Get stored CSRF token
-   */
-  getCsrfToken(): string {
-    if (!this.csrfToken) {
-      const stored = sessionStorage.getItem('csrf_token');
-      if (stored) {
-        this.csrfToken = stored;
-      } else {
-        this.initCsrf();
-      }
-    }
-    return this.csrfToken!;
-  }
-
-  /**
-   * Make secure request to backend API
+   * Make secure request to API Gateway
    */
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseUrl}/api${endpoint}`;
+  ): Promise<ApiResponse<T>> {
+    const url = `${this.baseUrl}${this.apiGatewayUrl}${endpoint}`;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -76,118 +74,117 @@ export class SecureApiClient {
 
     // Add CSRF token for state-changing requests
     if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method)) {
-      headers['X-CSRF-Token'] = this.getCsrfToken();
+      const csrfToken = await csrf.getToken();
+      headers['x-csrf-token'] = csrfToken;
     }
 
-    // Prevent credentials leakage
+    // Secure fetch options
     const fetchOptions: RequestInit = {
       ...options,
       headers,
-      credentials: 'same-origin',
-      // Prevent redirect following for security
-      redirect: 'error',
+      credentials: 'same-origin', // Only send cookies for same-origin
+      redirect: 'error', // Don't follow redirects
     };
 
     try {
       const response = await fetch(url, fetchOptions);
 
-      // Handle errors
+      // Handle HTTP errors
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const error = new Error(
-          errorData.message || 
-          errorData.error || 
-          `HTTP ${response.status}`
-        );
-        (error as any).status = response.status;
-        throw error;
+        let errorData: any = {};
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          // Response wasn't JSON
+        }
+
+        const errorMessage =
+          errorData.message ||
+          errorData.error ||
+          `HTTP ${response.status}: ${response.statusText}`;
+
+        // Rate limit error
+        if (response.status === 429) {
+          throw new Error('Too many requests. Please wait before trying again.');
+        }
+
+        // CSRF error
+        if (response.status === 403) {
+          throw new Error('Security validation failed. Please refresh and try again.');
+        }
+
+        // Validation error
+        if (response.status === 400) {
+          throw new Error(errorMessage);
+        }
+
+        // Server error
+        if (response.status >= 500) {
+          throw new Error('Server error. Please try again later.');
+        }
+
+        throw new Error(errorMessage);
       }
 
-      return response.json();
+      // Parse response
+      const data: ApiResponse<T> = await response.json();
+      return data;
     } catch (error) {
-      console.error(`[API] Error on ${endpoint}:`, error);
-      throw error;
+      // Re-throw with context
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`API request failed: ${String(error)}`);
     }
   }
 
   /**
-   * Submit consultation form through secure backend
+   * Submit consultation form through secure API Gateway
    */
-  async submitConsultation(data: any): Promise<{ success: boolean; message?: string }> {
-    return this.request('/submit-consultation', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+  async submitConsultation(payload: ConsultationPayload): Promise<ApiResponse> {
+    // Get CSRF token for submission
+    const csrfToken = await csrf.getToken();
+
+    // Include CSRF token in payload
+    const payloadWithCsrf: any = {
+      ...payload,
+      csrf_token: csrfToken,
+    };
+
+    return this.request<{ id: string }>(
+      '/consultation/submit',
+      {
+        method: 'POST',
+        body: JSON.stringify(payloadWithCsrf),
+      }
+    );
   }
 
   /**
-   * Check rate limit status
+   * Get settings (admin only)
    */
-  async checkRateLimit(): Promise<{
-    allowed: boolean;
-    remaining: number;
-    resetTime?: number;
-  }> {
-    return this.request('/rate-limit');
-  }
-
-  /**
-   * Get current session info
-   */
-  async getSession(): Promise<{ authenticated: boolean; email?: string }> {
-    return this.request('/session');
-  }
-
-  /**
-   * Login with email/password (through secure backend)
-   */
-  async login(email: string, password: string): Promise<{
-    success: boolean;
-    token?: string;
-    error?: string;
-  }> {
-    return this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-  }
-
-  /**
-   * Logout
-   */
-  async logout(): Promise<{ success: boolean }> {
-    this.csrfToken = null;
-    sessionStorage.removeItem('csrf_token');
-    return this.request('/auth/logout', {
-      method: 'POST',
-      body: JSON.stringify({}),
-    });
-  }
-
-  /**
-   * Reset password
-   */
-  async resetPassword(email: string): Promise<{ success: boolean; message?: string }> {
-    return this.request('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
-
-  /**
-   * Get app settings (admin only)
-   */
-  async getSettings(): Promise<any> {
-    return this.request('/settings');
-  }
-
-  /**
-   * Update app settings (admin only)
-   */
-  async updateSettings(data: any): Promise<{ success: boolean }> {
+  async getSettings(): Promise<ApiResponse> {
     return this.request('/settings', {
-      method: 'PUT',
-      body: JSON.stringify(data),
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Update settings (admin only)
+   */
+  async updateSettings(settings: Record<string, any>): Promise<ApiResponse> {
+    return this.request('/settings', {
+      method: 'POST',
+      body: JSON.stringify(settings),
+    });
+  }
+
+  /**
+   * Health check
+   */
+  async healthCheck(): Promise<ApiResponse> {
+    return this.request('/health', {
+      method: 'GET',
     });
   }
 }

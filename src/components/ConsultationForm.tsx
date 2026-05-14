@@ -1,16 +1,11 @@
-<<<<<<< HEAD
-import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, Send, Loader2 } from 'lucide-react';
-import { initialFormData } from '../types/form';
-import type { FormData, StepErrors } from '../types/form';
-import { supabase } from '../lib/supabase';
-=======
 import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Send, Loader2 } from 'lucide-react';
 import { initialFormData } from '../types/form';
 import type { FormData, StepErrors } from '../types/form';
 import { apiClient } from '../lib/secure-api';
->>>>>>> 0efd128 (feat(security): implement critical security hardening and vulnerability remediation)
+import { validator, sanitizer, validate } from '../lib/validation';
+import { csrf } from '../lib/csrf';
+import { securityLogger, SecurityEventType, EventSeverity } from '../lib/monitoring/logger';
 import ProgressBar from './ProgressBar';
 import StepIndicator from './StepIndicator';
 import SuccessView from './SuccessView';
@@ -22,48 +17,67 @@ import DecisionProcess from './steps/DecisionProcess';
 
 const TOTAL_STEPS = 5;
 
-const DEFAULT_APPS_SCRIPT_URL =
-  'https://script.google.com/macros/s/AKfycbyiYQzXuw6yABitnLN5QVio_h6zEXR0IijQjtpv5sbSY5KJvMY21u91LWK8i4TBvcdMnQ/exec';
-
-function validateEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
+/**
+ * 🔒 Validates step data with enhanced security checks
+ */
 function validateStep(step: number, formData: FormData): StepErrors {
   const errors: StepErrors = {};
 
   switch (step) {
     case 1:
-      if (!formData.organizationName.trim()) {
-        errors.organizationName = 'Organization name is required';
+      {
+        const orgName = sanitizer.sanitizeText(formData.organizationName);
+        if (!validator.isValidText(orgName, 1, 200)) {
+          errors.organizationName = 'Organization name is required (1-200 characters)';
+          securityLogger.logInvalidInput('organizationName', 'Invalid length');
+        }
       }
       break;
     case 2:
       if (formData.serviceAreas.length === 0) {
         errors.serviceAreas = 'Please select at least one engagement area';
+        securityLogger.logInvalidInput('serviceAreas', 'No areas selected');
       }
       break;
     case 3:
-      if (!formData.keyChallenge.trim()) {
-        errors.keyChallenge = 'Please describe the key challenge';
-      }
-      if (!formData.desiredOutcome.trim()) {
-        errors.desiredOutcome = 'Please describe the desired outcome';
+      {
+        const challenge = sanitizer.sanitizeText(formData.keyChallenge);
+        const outcome = sanitizer.sanitizeText(formData.desiredOutcome);
+
+        if (!validator.isValidText(challenge, 10, 2000)) {
+          errors.keyChallenge = 'Please describe the key challenge (10-2000 characters)';
+          securityLogger.logInvalidInput('keyChallenge', 'Invalid length');
+        }
+        if (!validator.isValidText(outcome, 10, 2000)) {
+          errors.desiredOutcome = 'Please describe the desired outcome (10-2000 characters)';
+          securityLogger.logInvalidInput('desiredOutcome', 'Invalid length');
+        }
       }
       break;
     case 4:
       if (!formData.budgetApproved) {
         errors.budgetApproved = 'Please indicate budget status';
+        securityLogger.logInvalidInput('budgetApproved', 'Not selected');
       }
       break;
     case 5:
-      if (!formData.contactName.trim()) {
-        errors.contactName = 'Full name is required';
-      }
-      if (!formData.contactEmail.trim()) {
-        errors.contactEmail = 'Email address is required';
-      } else if (!validateEmail(formData.contactEmail)) {
-        errors.contactEmail = 'Please enter a valid email address';
+      {
+        const nameValidation = validate.name(formData.contactName);
+        const emailValidation = validate.email(formData.contactEmail);
+        const phoneValidation = validate.phone(formData.contactPhone);
+
+        if (!nameValidation.valid) {
+          errors.contactName = nameValidation.error || 'Invalid name';
+          securityLogger.logInvalidInput('contactName', nameValidation.error || 'Invalid');
+        }
+        if (!emailValidation.valid) {
+          errors.contactEmail = emailValidation.error || 'Invalid email';
+          securityLogger.logInvalidInput('contactEmail', emailValidation.error || 'Invalid');
+        }
+        if (formData.contactPhone && !phoneValidation.valid) {
+          errors.contactPhone = phoneValidation.error || 'Invalid phone';
+          securityLogger.logInvalidInput('contactPhone', phoneValidation.error || 'Invalid');
+        }
       }
       break;
   }
@@ -78,26 +92,29 @@ export default function ConsultationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [appsScriptUrl, setAppsScriptUrl] = useState('');
+  const [csrfToken, setCsrfToken] = useState('');
 
+  // 🔒 Initialize CSRF protection on mount
   useEffect(() => {
-    async function loadWebhookUrl() {
-      const { data } = await supabase
-        .from('app_settings')
-        .select('value')
-        .eq('key', 'google_sheets_webhook')
-        .maybeSingle();
-
-      if (data?.value) {
-        setAppsScriptUrl(data.value);
+    const initCsrf = async () => {
+      try {
+        const token = await csrf.getToken();
+        setCsrfToken(token);
+      } catch (error) {
+        console.error('[ConsultationForm] Failed to initialize CSRF token:', error);
       }
-    }
-
-    loadWebhookUrl();
+    };
+    initCsrf();
   }, []);
 
-  function handleChange(field: keyof FormData, value: string | string[]) {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  function handleChange(field: keyof FormData, value: string | string[] | boolean) {
+    // 🔒 Sanitize text inputs before storing
+    let sanitizedValue = value;
+    if (typeof value === 'string') {
+      sanitizedValue = sanitizer.sanitizeText(value);
+    }
+
+    setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
     if (errors[field]) {
       setErrors((prev) => {
         const next = { ...prev };
@@ -131,107 +148,88 @@ export default function ConsultationForm() {
       return;
     }
 
+    // 🔒 Validate CSRF token before submitting
+    if (!csrfToken) {
+      const error = 'Security token missing. Please refresh and try again.';
+      setSubmitError(error);
+      securityLogger.logCsrfValidationFailed();
+      return;
+    }
+
+    if (!(await csrf.validateToken(csrfToken))) {
+      const error = 'Security validation failed. Please refresh and try again.';
+      setSubmitError(error);
+      securityLogger.logCsrfValidationFailed();
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitError('');
 
+    // 🔒 Sanitize all text fields and validate before submission
     const payload = {
-      organization_name: formData.organizationName.trim(),
-      industry: formData.industry,
-      industry_other: formData.industryOther.trim(),
-      country: formData.country,
-      website: formData.website.trim(),
-      employees: formData.employees,
-      service_areas: JSON.stringify(formData.serviceAreas),
-      service_area_other: formData.serviceAreaOther.trim(),
-      key_challenge: formData.keyChallenge.trim(),
-      desired_outcome: formData.desiredOutcome.trim(),
-      reform_context: formData.reformContext.trim(),
-      start_date: formData.startDate,
-      timeline: formData.timeline,
+      organization_name: sanitizer.sanitizeText(formData.organizationName).trim(),
+      industry: sanitizer.sanitizeText(formData.industry).trim(),
+      industry_other: sanitizer.sanitizeText(formData.industryOther).trim(),
+      country: sanitizer.sanitizeText(formData.country).trim(),
+      website: sanitizer.sanitizeUrl(formData.website.trim()),
+      employees: sanitizer.sanitizeText(formData.employees).trim(),
+      service_areas: formData.serviceAreas, // Already validated as array
+      service_area_other: sanitizer.sanitizeText(formData.serviceAreaOther).trim(),
+      key_challenge: sanitizer.sanitizeText(formData.keyChallenge).trim(),
+      desired_outcome: sanitizer.sanitizeText(formData.desiredOutcome).trim(),
+      reform_context: sanitizer.sanitizeText(formData.reformContext).trim(),
+      start_date: formData.startDate, // Date already validated
+      timeline: sanitizer.sanitizeText(formData.timeline).trim(),
       budget_approved: formData.budgetApproved,
-      contact_name: formData.contactName.trim(),
-      contact_email: formData.contactEmail.trim(),
-      contact_phone: formData.contactPhone.trim(),
-      contact_role: formData.contactRole.trim(),
-      approvers: formData.approvers.trim(),
-      partners: formData.partners.trim(),
+      contact_name: sanitizer.sanitizeText(formData.contactName).trim(),
+      contact_email: sanitizer.sanitizeEmail(formData.contactEmail.trim()),
+      contact_phone: sanitizer.sanitizePhone(formData.contactPhone.trim()),
+      contact_role: sanitizer.sanitizeText(formData.contactRole).trim(),
+      approvers: sanitizer.sanitizeText(formData.approvers).trim(),
+      partners: sanitizer.sanitizeText(formData.partners).trim(),
+      csrf_token: csrfToken, // Include CSRF token with submission
     };
 
-    const formBody = new URLSearchParams();
-    Object.entries(payload).forEach(([key, value]) => {
-      formBody.append(key, String(value ?? ''));
-    });
-
-    const submitUrl = (appsScriptUrl?.trim() || DEFAULT_APPS_SCRIPT_URL);
-    if (!submitUrl) {
+    // 🔒 Final validation of critical fields
+    const emailValidation = validate.email(payload.contact_email);
+    if (!emailValidation.valid) {
       setIsSubmitting(false);
-      setSubmitError('Submission endpoint is not configured. Please contact support.');
+      const error = `Invalid email: ${emailValidation.error}`;
+      setSubmitError(error);
+      securityLogger.logInvalidInput('contactEmail', emailValidation.error || 'Invalid');
       return;
     }
 
     try {
-<<<<<<< HEAD
-      const res = await fetch(submitUrl, {
-        method: 'POST',
-        mode: 'cors',
-        redirect: 'follow',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-        },
-        body: formBody.toString(),
-      });
-
-      const text = await res.text().catch(() => '');
-      if (!res.ok) {
-        let msg = 'Something went wrong. Please try again or contact us directly.';
-        if (text) {
-          try {
-            const body = JSON.parse(text);
-            msg = body?.error || JSON.stringify(body);
-          } catch {
-            msg = text;
-          }
-        }
-=======
       // ✅ Use secure backend API instead of direct Supabase call
-      // No credentials exposed to frontend
+      // No credentials exposed to frontend, CSRF token included
       const result = await apiClient.submitConsultation(payload);
 
       if (!result.success) {
         const msg = result.message || 'Submission failed. Please try again.';
->>>>>>> 0efd128 (feat(security): implement critical security hardening and vulnerability remediation)
         setIsSubmitting(false);
         setSubmitError(msg);
+        securityLogger.log(
+          SecurityEventType.DATA_MODIFICATION,
+          'Consultation form submission failed',
+          'failure',
+          EventSeverity.WARNING
+        );
         return;
       }
-<<<<<<< HEAD
 
-      if (text) {
-        try {
-          const body = JSON.parse(text);
-          if (body?.error) {
-            setIsSubmitting(false);
-            setSubmitError(body.error);
-            return;
-          }
-        } catch {
-          // Apps Script may return plain text, so ignore parse failure on success.
-        }
-      }
-    } catch (error) {
-      setIsSubmitting(false);
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : 'Something went wrong. Please try again or contact us directly.'
+      // 🔒 Log successful submission
+      securityLogger.log(
+        SecurityEventType.DATA_MODIFICATION,
+        'Consultation form submitted successfully',
+        'success',
+        EventSeverity.INFO
       );
-=======
     } catch (error) {
       setIsSubmitting(false);
       const errorMessage = error instanceof Error ? error.message : 'Network error. Please try again.';
       setSubmitError(errorMessage);
->>>>>>> 0efd128 (feat(security): implement critical security hardening and vulnerability remediation)
       return;
     }
 
