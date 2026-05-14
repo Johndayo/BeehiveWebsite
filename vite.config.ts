@@ -90,6 +90,15 @@ export default defineConfig({
       origin: ['http://localhost:5173', 'http://localhost:3000'],
       credentials: true,
     },
+    // 🔒 Proxy API calls to Supabase Edge Functions
+    proxy: {
+      '/api': {
+        target: 'https://hrxefopvcxhowrzyaqpz.supabase.co/functions/v1/api-gateway',
+        changeOrigin: true,
+        rewrite: (path) => path, // Keep /api prefix for backend routing
+        secure: true,
+      },
+    },
     // Enable compression
     middlewareMode: false,
   },

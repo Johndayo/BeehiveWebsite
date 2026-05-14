@@ -492,38 +492,7 @@ serve(async (request: Request) => {
       headers: { ...headers, "Content-Type": "application/json" },
     });
   }
-}
-    .from("submission_rate_limits")
-    .select("*", { count: "exact", head: true })
-    .eq("ip_hash", ipHash)
-    .gte("submitted_at", oneHourAgo);
-
-  if ((hourCount ?? 0) >= SUBMISSION_LIMITS.per_hour) {
-    return {
-      allowed: false,
-      message: "Too many submissions today. Try again in 1 hour.",
-      retryAfter: 3600,
-    };
-  }
-
-  // Check per-day
-  const oneDayAgo = new Date(now.getTime() - 86_400_000).toISOString();
-  const { count: dayCount } = await supabase
-    .from("submission_rate_limits")
-    .select("*", { count: "exact", head: true })
-    .eq("ip_hash", ipHash)
-    .gte("submitted_at", oneDayAgo);
-
-  if ((dayCount ?? 0) >= SUBMISSION_LIMITS.per_day) {
-    return {
-      allowed: false,
-      message: "Daily limit reached. Try tomorrow.",
-      retryAfter: 86400,
-    };
-  }
-
-  return { allowed: true };
-}
+});
 
 // ============================================================================
 // WEBHOOK VALIDATION
