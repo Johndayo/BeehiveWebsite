@@ -70,13 +70,18 @@ function HoneycombAccent() {
 
 export default function HeroSection({ onNavigate }: HeroSectionProps) {
   return (
-    <section className="relative overflow-hidden min-h-[560px] md:min-h-[640px] lg:min-h-[720px] pb-16 sm:pb-20">
+    <section
+      className="relative overflow-hidden min-h-[560px] md:min-h-[640px] lg:min-h-[720px] pb-16 sm:pb-20"
+      aria-label="Hero section - Institutional capacity building and strategic advisory"
+    >
       <ProgressiveImage
         src="https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"
-        alt=""
+        alt="Business team collaborating on strategic consulting and capacity building initiatives"
         className="absolute inset-0 w-full h-full object-cover"
         wrapperClassName="absolute inset-0"
         loading="eager"
+        width={1920}
+        height={1080}
       />
 
       <div className="absolute inset-0 bg-gradient-to-br from-navy-950/95 via-navy-900/90 to-navy-950/80" />

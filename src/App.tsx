@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import { useAuth } from './hooks/useAuth';
 import { csrf } from './lib/csrf';
+import { organizationSchema, faqSchema } from './data/seoSchema';
 
 export type Page = 'home' | 'team' | 'services' | 'about' | 'consultation' | 'settings';
 
@@ -32,6 +33,105 @@ export default function App() {
       console.error('[App] CSRF initialization failed:', err)
     );
   }, []);
+
+  // Update SEO based on current page
+  useEffect(() => {
+    const pageSEO: Record<Page | '404', { title: string; description: string; keywords: string[] }> = {
+      home: {
+        title: 'Business Consulting Services | Strategic & Management Consulting | Beehive Associates',
+        description: 'Award-winning consulting firm providing strategic consulting, management consulting, and business transformation services. Helping executives and organizations achieve operational excellence.',
+        keywords: ['business consulting', 'strategic consulting', 'management consulting', 'business transformation', 'consulting services'],
+      },
+      team: {
+        title: 'Our Team | Expert Consultants | Beehive Associates',
+        description: 'Meet the experienced consultants and advisors at Beehive Associates. Industry experts in strategic consulting, business transformation, and organizational development.',
+        keywords: ['consulting team', 'business consultants', 'expert advisors', 'management consultants', 'professional consultants'],
+      },
+      services: {
+        title: 'Consulting Services | Strategic & Operational Excellence | Beehive Associates',
+        description: 'Comprehensive consulting services including strategic planning, operational excellence, organizational development, and institutional capacity building.',
+        keywords: ['consulting services', 'strategic services', 'operational consulting', 'advisory services', 'business advisory'],
+      },
+      about: {
+        title: 'About Us | Beehive Associates Consulting',
+        description: 'Learn about Beehive Associates - a leading consulting firm dedicated to institutional capacity building and strategic advisory services.',
+        keywords: ['about beehive', 'consulting company', 'about us', 'company profile', 'consulting firm'],
+      },
+      consultation: {
+        title: 'Book a Consultation | Beehive Associates',
+        description: 'Schedule a free consultation with our expert consultants to discuss your organization\'s strategic and operational challenges.',
+        keywords: ['consultation', 'book consultation', 'free consultation', 'consult with us', 'business consultation'],
+      },
+      settings: {
+        title: 'Settings | Beehive Associates',
+        description: 'Manage your account settings and preferences.',
+        keywords: ['settings', 'account settings'],
+      },
+      '404': {
+        title: 'Page Not Found | Beehive Associates',
+        description: 'The page you are looking for could not be found.',
+        keywords: ['404', 'not found'],
+      },
+    };
+
+    const seo = pageSEO[page];
+    if (seo) {
+      // Update title
+      document.title = seo.title;
+      
+      // Update meta description
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute('content', seo.description);
+      }
+
+      // Update keywords
+      const metaKeywords = document.querySelector('meta[name="keywords"]');
+      if (metaKeywords) {
+        metaKeywords.setAttribute('content', seo.keywords.join(', '));
+      }
+
+      // Update OG tags
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute('content', seo.title);
+      
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc) ogDesc.setAttribute('content', seo.description);
+
+      // Add structured data for home page
+      if (page === 'home') {
+        addStructuredData([organizationSchema, faqSchema]);
+      } else {
+        // Remove dynamic structured data for non-home pages
+        const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+        scripts.forEach(script => {
+          const content = script.innerHTML;
+          // Only remove if it's not the base organization schema from index.html
+          if (content.includes('BreadcrumbList') || content.includes('Article')) {
+            script.remove();
+          }
+        });
+      }
+    }
+  }, [page]);
+
+  // Helper function to add structured data
+  function addStructuredData(data: any[]): void {
+    const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+    scripts.forEach(script => {
+      const content = script.innerHTML;
+      if (content.includes('BreadcrumbList') || content.includes('FAQPage')) {
+        script.remove();
+      }
+    });
+
+    data.forEach(schemaItem => {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.innerHTML = JSON.stringify(schemaItem);
+      document.head.appendChild(script);
+    });
+  }
 
   useEffect(() => {
     function onHashChange() {

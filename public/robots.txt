@@ -1,0 +1,27 @@
+User-agent: *
+Allow: /
+Disallow: /settings
+Disallow: /admin
+Disallow: /*.json$
+Disallow: /*.config
+Disallow: /node_modules
+Disallow: /.git
+
+# Allow search engines to crawl all public pages
+Allow: /
+
+# Specify crawl delay (in seconds)
+Crawl-delay: 1
+
+# Specify sitemap location
+Sitemap: https://beehiveassociates.com/sitemap.xml
+
+# Google-specific directives
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Bing-specific directives
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1

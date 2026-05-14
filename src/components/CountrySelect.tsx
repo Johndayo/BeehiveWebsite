@@ -51,23 +51,30 @@ export default function CountrySelect({ value, onChange, placeholder = 'Select a
         type="button"
         onClick={() => setIsOpen((s) => !s)}
         className="w-full flex items-center justify-between px-4 py-3 bg-white border border-navy-200 rounded-lg text-left transition-colors"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
       >
         <div className="flex items-center gap-3">
           {value ? (
-            <img src={flagUrlFor(value)} alt="flag" className="w-5 h-4 object-cover rounded-sm" onError={(e)=>{(e.target as HTMLImageElement).style.display='none'}} />
+            <img
+              src={flagUrlFor(value)}
+              alt={`${value} flag`}
+              className="w-5 h-4 object-cover rounded-sm"
+              onError={(e)=>{(e.target as HTMLImageElement).style.display='none'}}
+            />
           ) : null}
           <span className={value ? 'text-navy-900' : 'text-navy-400'}>
             {value || placeholder}
           </span>
         </div>
-        <ChevronDown className="w-4 h-4 text-navy-400" />
+        <ChevronDown className="w-4 h-4 text-navy-400" aria-hidden="true" />
       </button>
 
       {isOpen && (
         <div className="absolute z-50 mt-2 w-full bg-white border border-navy-200 rounded-lg shadow-lg animate-fade-in">
           <div className="p-2 border-b border-navy-100">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-400" aria-hidden="true" />
               <input
                 ref={inputRef}
                 type="text"
@@ -75,11 +82,12 @@ export default function CountrySelect({ value, onChange, placeholder = 'Select a
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search for country..."
                 className="w-full pl-9 pr-3 py-2 text-sm border border-navy-200 rounded-md focus:outline-none focus:border-navy-600 focus:ring-1 focus:ring-navy-200"
+                aria-label="Search countries by name"
               />
             </div>
           </div>
 
-          <ul className="max-h-56 overflow-y-auto py-1">
+          <ul className="max-h-56 overflow-y-auto py-1" role="listbox">
             {filtered.length === 0 ? (
               <li className="px-4 py-3 text-sm text-navy-400 text-center">No results found</li>
             ) : (
@@ -88,8 +96,14 @@ export default function CountrySelect({ value, onChange, placeholder = 'Select a
                   key={c}
                   onClick={() => { onChange(c); close(); }}
                   className="flex items-center gap-3 px-4 py-2.5 text-sm cursor-pointer transition-colors hover:bg-navy-50"
+                  role="option"
                 >
-                  <img src={flagUrlFor(c)} alt="flag" className="w-5 h-4 object-cover rounded-sm" onError={(e)=>{(e.target as HTMLImageElement).style.display='none'}} />
+                  <img
+                    src={flagUrlFor(c)}
+                    alt={`${c} flag`}
+                    className="w-5 h-4 object-cover rounded-sm"
+                    onError={(e)=>{(e.target as HTMLImageElement).style.display='none'}}
+                  />
                   <span className="text-navy-700">{c}</span>
                 </li>
               ))
