@@ -395,7 +395,7 @@ async function handleConsultationSubmit(
 
               await fetch(webhookUrl, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "text/plain" },
                 body: JSON.stringify(payload),
                 redirect: "error",
                 signal: controller.signal,

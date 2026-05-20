@@ -174,7 +174,7 @@ Deno.serve(async (req: Request) => {
           // This prevents the browser/fetch from following arbitrary redirects
           const response = await fetch(webhookUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "text/plain" },
             body: JSON.stringify(payload),
             redirect: "manual", // Don't follow redirects
           });
