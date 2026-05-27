@@ -23,7 +23,7 @@ Beyond academia, Bentex is a literary creative artist and the Principal Consulta
 An award-winning IP influencer recognised by the JIIPCC Academy in 2024, Bentex also co-leads Nasara Creative, a literary initiative supporting Nigerian Creatives in IP awareness and protection. His work continues to bridge the intersection of Law, research, creativity, and innovation for sustainable development.
 
 He's written and researched extensively and is also the author of a new text on IP titled *INTELLECTUAL PROPERTY NEXUS: The Definitive Guide for Students, Innovators, Entrepreneurs and Practitioners.*`,
-    image: '/IMG_1869.JPG',
+    image: '/bentex.jpg',
     linkedin: 'https://www.linkedin.com/in/benjamin-terhile-torlafia-3b331465/',
   },
   {
@@ -34,7 +34,7 @@ He's written and researched extensively and is also the author of a new text on 
 With a solid background in veterinary medicine and hands-on experience in stakeholder engagement, I have developed exceptional organisational, coordination, and problem-solving skills that translate effectively across industries, including construction and infrastructure development. I am highly skilled at managing client expectations, fostering strategic partnerships, and ensuring smooth communication between teams and stakeholders.
 
 I provide value, optimising processes and ensuring successful project execution through discipline, attention to detail, and a firm commitment to excellence. My primary goal is to support business growth while upholding efficiency, professionalism, and long-term client satisfaction.`,
-    image: '/IMG_1859.JPG',
+    image: '/jummai.jpg',
     linkedin: 'https://www.linkedin.com/in/jummai-abbah-72047a158',
   },
 ];
