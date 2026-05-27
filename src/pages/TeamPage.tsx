@@ -1,60 +1,64 @@
+import { useState } from 'react';
 import { Linkedin } from 'lucide-react';
 import useScrollReveal from '../hooks/useScrollReveal';
 
-const TEAM_MEMBERS = [
+type TeamMember = {
+  name: string;
+  title: string;
+  bio: string;
+  image: string;
+  linkedin: string;
+};
+
+const TEAM_MEMBERS: TeamMember[] = [
   {
-    name: 'Akintunde Adeyemi',
-    title: 'Managing Partner',
-    bio: 'Akintunde leads Beehive Associates with more than 18 years of experience advising governments and institutions on performance improvement, public-private partnerships, and governance reform.',
-    image:
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=640&q=80',
-    linkedin: 'https://www.linkedin.com/in/placeholder-akintunde',
-  },
-  {
-    name: 'Chinwe Nwosu',
-    title: 'Principal Consultant',
-    bio: 'Chinwe specialises in institutional strengthening, strategy development, and capacity building for service delivery teams across public and private sectors.',
-    image:
-      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=640&q=80',
-    linkedin: 'https://www.linkedin.com/in/placeholder-chinwe',
-  },
-  {
-    name: 'Daniel Osei',
-    title: 'Senior Advisor',
-    bio: 'Daniel brings deep expertise in monitoring and evaluation, data-driven decision making, and sustainable performance frameworks for complex organisations.',
-    image:
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=640&q=80',
-    linkedin: '',
-  },
-  {
-    name: 'Fatima Bello',
-    title: 'Operations Director',
-    bio: 'Fatima manages client delivery, operational systems, and stakeholder engagement to ensure every project is executed on time and to the highest standard.',
-    image:
-      'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=640&q=80',
-    linkedin: 'https://www.linkedin.com/in/placeholder-fatima',
-  },
-  {
-    name: 'Samuel Ibe',
-    title: 'Strategy Lead',
-    bio: 'Samuel develops strategic roadmaps and partner alignment plans that help institutions accelerate impact and achieve measurable outcomes.',
+    name: 'Bentex Torlafia',
+    title: 'IP Law Consultant & Academic',
+    bio: `*BENTEX TORLAFIA* is an Intellectual Property (IP) Law expert, consultant, and academic. He holds an LLM in Intellectual Property Law with specialisations in Patent Law and Design Law from WIPO/TürkPatent/Ankara University, Turkey, and is an alumnus of the WIPO–Harvard Law School PatentX Programme. He is also an active member of the WIPO International Network for Intellectual Property Education (WINIPE).
+
+Currently, Bentex is an accredited WIPO Academy IP Tutor and also lectures IP and Law at the Department of Public and Private Law, Faculty of Law, North-Eastern University, Gombe, Gombe State. His research interests centre on digital entertainment, business innovation, and SME development, which form the basis of his ongoing PhD-IP Law at the Faculty of Law, Nasarawa State University, Keffi-Nigeria.
+
+Beyond academia, Bentex is a literary creative artist and the Principal Consultant at Regal Legal Consult, offering IP advisory and legal services to Innovators, creatives, and enterprises. His work with WIPO, other National and State IP offices has contributed to IP policy development, commercialisation, and technology transfer in Nigeria.
+
+An award-winning IP influencer recognised by the JIIPCC Academy in 2024, Bentex also co-leads Nasara Creative, a literary initiative supporting Nigerian Creatives in IP awareness and protection. His work continues to bridge the intersection of Law, research, creativity, and innovation for sustainable development.
+
+He's written and researched extensively and is also the author of a new text on IP titled *INTELLECTUAL PROPERTY NEXUS: The Definitive Guide for Students, Innovators, Entrepreneurs and Practitioners.*`,
     image:
       'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=640&q=80',
-    linkedin: '',
+    linkedin: 'https://www.linkedin.com/in/bentex-torlafia-3b331465',
   },
   {
-    name: 'Simi Johnson',
-    title: 'Client Experience Lead',
-    bio: 'Simi ensures every client receives a tailored engagement experience with clear communications, responsive support, and actionable insights.',
-    image:
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=640&q=80',
-    linkedin: 'https://www.linkedin.com/in/placeholder-simi',
+    name: 'Jummai Ilebaye Abbah',
+    title: 'Business Development & Client Relations Specialist',
+    bio: `A goal-driven professional with over five years of experience spanning client relationship management, business development, and corporate communication. I bring a strong ability to build and maintain productive relationships while driving organisational growth and operational excellence.
+
+With a solid background in veterinary medicine and hands-on experience in stakeholder engagement, I have developed exceptional organisational, coordination, and problem-solving skills that translate effectively across industries, including construction and infrastructure development. I am highly skilled at managing client expectations, fostering strategic partnerships, and ensuring smooth communication between teams and stakeholders.
+
+I provide value, optimising processes and ensuring successful project execution through discipline, attention to detail, and a firm commitment to excellence. My primary goal is to support business growth while upholding efficiency, professionalism, and long-term client satisfaction.`,
+    image: '/IMG_1859.JPG',
+    linkedin: 'https://www.linkedin.com/in/jummai-abbah-72047a158',
   },
 ];
 
 export default function TeamPage() {
   const headingRef = useScrollReveal<HTMLDivElement>();
   const cardsRef = useScrollReveal<HTMLDivElement>({ threshold: 0.1 });
+  const [expandedMembers, setExpandedMembers] = useState<Record<string, boolean>>({});
+
+  const toggleBioExpansion = (name: string) => {
+    setExpandedMembers((current) => ({ ...current, [name]: !current[name] }));
+  };
+
+  const getPreviewBio = (bio: string) => {
+    const firstParagraph = bio.split('\n').find(Boolean) ?? bio;
+    if (firstParagraph.length <= 280) return firstParagraph;
+    return `${firstParagraph.slice(0, 280).trim()}...`;
+  };
+
+  const shouldShowReadMore = (bio: string) => {
+    const firstParagraph = bio.split('\n').find(Boolean) ?? bio;
+    return bio.length > firstParagraph.length + 40 || bio.includes('\n\n');
+  };
 
   return (
     <main className="flex-1 py-16 sm:py-20 bg-stone-50">
@@ -104,20 +108,28 @@ export default function TeamPage() {
                   ) : null}
                 </div>
 
-                <p className="mt-5 text-sm leading-relaxed text-navy-600">{member.bio}</p>
-                <p className="mt-5 text-xs uppercase tracking-[0.18em] text-navy-400">
-                  Photo and bio are placeholders. Replace with your team details.
-                </p>
+                <div className="mt-5 space-y-4 text-sm leading-relaxed text-navy-600">
+                  {(expandedMembers[member.name] ? member.bio : getPreviewBio(member.bio))
+                    .split('\n')
+                    .filter(Boolean)
+                    .map((paragraph, index) => (
+                      <p key={index}>{paragraph}</p>
+                    ))}
+                </div>
+                {shouldShowReadMore(member.bio) ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleBioExpansion(member.name)}
+                    className="mt-4 inline-flex items-center text-sm font-semibold text-brand-600 hover:text-brand-700"
+                  >
+                    {expandedMembers[member.name] ? 'Read less' : 'Read more'}
+                  </button>
+                ) : null}
               </div>
             </article>
           ))}
         </div>
 
-        <div className="mt-14 sm:mt-16 text-center">
-          <p className="text-sm text-navy-500 max-w-2xl mx-auto leading-relaxed">
-            Replace placeholder images and bios in the <code className="rounded bg-navy-100 px-1.5 py-0.5 text-navy-700">TEAM_MEMBERS</code> array.
-          </p>
-        </div>
       </div>
     </main>
   );
