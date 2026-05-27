@@ -24,7 +24,7 @@ An award-winning IP influencer recognised by the JIIPCC Academy in 2024, Bentex 
 
 He's written and researched extensively and is also the author of a new text on IP titled *INTELLECTUAL PROPERTY NEXUS: The Definitive Guide for Students, Innovators, Entrepreneurs and Practitioners.*`,
     image: '/IMG_1869.JPG',
-    linkedin: 'https://www.linkedin.com/in/bentex-torlafia-3b331465',
+    linkedin: 'https://www.linkedin.com/in/benjamin-terhile-torlafia-3b331465/',
   },
   {
     name: 'Jummai Ilebaye Abbah',
