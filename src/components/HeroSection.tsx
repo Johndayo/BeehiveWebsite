@@ -71,7 +71,7 @@ function HoneycombAccent() {
 export default function HeroSection({ onNavigate }: HeroSectionProps) {
   return (
     <section
-      className="relative overflow-hidden min-h-[480px] md:min-h-[640px] lg:min-h-[720px] pb-8 sm:pb-14"
+      className="relative overflow-hidden min-h-[440px] md:min-h-[640px] lg:min-h-[720px] pb-6 sm:pb-14"
       aria-label="Hero section - Institutional capacity building and strategic advisory"
     >
       <ProgressiveImage
@@ -96,7 +96,7 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
 
       <HoneycombAccent />
 
-      <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-10 sm:py-20 lg:py-32">
+      <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-8 sm:py-20 lg:py-32">
         <div className="max-w-3xl">
           <div
             className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 border border-brand-500/20 rounded-full mb-6 animate-fade-in-up"
@@ -128,12 +128,12 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
           </p>
 
           <div
-            className="flex flex-col sm:flex-row gap-3 mt-5 sm:mt-8 animate-fade-in-up"
+            className="flex flex-col gap-3 mt-4 sm:mt-7 animate-fade-in-up"
             style={{ animationDelay: '280ms', animationFillMode: 'both' }}
           >
             <button
               onClick={() => onNavigate('consultation')}
-              className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-brand-500 text-white text-sm font-semibold rounded-lg hover:bg-accent-500 transition-all shadow-lg shadow-brand-500/20 hover:shadow-brand-500/30"
+              className="group inline-flex w-full items-center justify-center gap-2 px-7 py-3.5 bg-brand-500 text-white text-sm font-semibold rounded-lg hover:bg-accent-500 transition-all shadow-lg shadow-brand-500/20 hover:shadow-brand-500/30 sm:w-auto"
             >
               Request a Consultation
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -141,7 +141,7 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
             <a
               href="/company-profile.pdf"
               download
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-white/5 text-white text-sm font-semibold rounded-lg border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-sm"
+              className="inline-flex w-full items-center justify-center gap-2 px-7 py-3.5 bg-white/5 text-white text-sm font-semibold rounded-lg border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-sm sm:w-auto"
             >
               <FileDown className="w-4 h-4" />
               Download Company Profile
@@ -149,22 +149,20 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
           </div>
 
           <div
-            className="flex flex-col gap-3 mt-6 sm:mt-10 animate-fade-in-up sm:flex-row sm:items-center sm:gap-6"
+            className="grid grid-cols-3 gap-3 mt-5 sm:mt-8 animate-fade-in-up text-center"
             style={{ animationDelay: '400ms', animationFillMode: 'both' }}
           >
-            <div className="flex items-center gap-2">
+            <div>
               <span className="text-2xl font-bold text-white">150+</span>
-              <span className="text-xs text-navy-300 leading-tight">Projects<br />Delivered</span>
+              <span className="text-xs text-navy-300 leading-tight block mt-1">Projects Delivered</span>
             </div>
-            <div className="hidden sm:block w-px h-8 bg-white/10" />
-            <div className="flex items-center gap-2">
+            <div>
               <span className="text-2xl font-bold text-white">30+</span>
-              <span className="text-xs text-navy-300 leading-tight">Countries<br />Served</span>
+              <span className="text-xs text-navy-300 leading-tight block mt-1">Countries Served</span>
             </div>
-            <div className="hidden sm:block w-px h-8 bg-white/10" />
-            <div className="flex items-center gap-2">
+            <div>
               <span className="text-2xl font-bold text-white">95%</span>
-              <span className="text-xs text-navy-300 leading-tight">Client<br />Satisfaction</span>
+              <span className="text-xs text-navy-300 leading-tight block mt-1">Client Satisfaction</span>
             </div>
           </div>
         </div>
