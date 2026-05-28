@@ -3,47 +3,87 @@ import { FileSpreadsheet, Save, Loader2, CheckCircle, ExternalLink, AlertCircle,
 import { supabase } from '../lib/supabase';
 
 const APPS_SCRIPT_CODE = `function doPost(e) {
-  // This form sends URL-encoded fields with the exact keys below.
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = e.parameter || {};
+  var data = {};
 
-  // service_areas is sent as a JSON string from the web form.
-  try {
-    data.service_areas = data.service_areas ? JSON.parse(data.service_areas) : [];
-  } catch (err) {
-    data.service_areas = [];
+  if (e.postData && e.postData.type && e.postData.type.indexOf('application/json') === 0) {
+    try {
+      data = JSON.parse(e.postData.contents || '{}');
+    } catch (err) {
+      data = e.parameter || {};
+    }
+  } else {
+    data = e.parameter || {};
   }
 
   if (sheet.getLastRow() === 0) {
     sheet.appendRow([
-      'Timestamp', 'Organization', 'Industry', 'Country', 'Website',
-      'Employees', 'Service Areas', 'Key Challenge', 'Desired Outcome',
-      'Reform Context', 'Start Date', 'Timeline', 'Budget Approved',
-      'Contact Name', 'Contact Email', 'Contact Phone', 'Contact Role',
-      'Approvers', 'Partners'
+      'Timestamp',
+      'organization_name',
+      'industry',
+      'industry_other',
+      'country',
+      'website',
+      'employees',
+      'service_areas',
+      'service_area_other',
+      'key_challenge',
+      'desired_outcome',
+      'reform_context',
+      'start_date',
+      'timeline',
+      'budget_approved',
+      'contact_name',
+      'contact_email',
+      'contact_phone',
+      'contact_role',
+      'approvers',
+      'partners',
+      'submission_source',
+      'status',
+      'notes'
     ]);
+  }
+
+  var serviceAreas = [];
+  if (data.service_areas) {
+    try {
+      serviceAreas = typeof data.service_areas === 'string'
+        ? JSON.parse(data.service_areas)
+        : data.service_areas;
+    } catch (err) {
+      serviceAreas = [];
+    }
+  }
+  if (!Array.isArray(serviceAreas)) {
+    serviceAreas = [];
   }
 
   sheet.appendRow([
     new Date().toISOString(),
     data.organization_name || '',
     data.industry || '',
+    data.industry_other || '',
     data.country || '',
     data.website || '',
     data.employees || '',
-    (data.service_areas || []).join(', '),
+    JSON.stringify(serviceAreas),
+    data.service_area_other || '',
     data.key_challenge || '',
     data.desired_outcome || '',
     data.reform_context || '',
     data.start_date || '',
     data.timeline || '',
-    data.budget_approved || '',
+    data.budget_approved == null ? '' : String(data.budget_approved),
     data.contact_name || '',
     data.contact_email || '',
     data.contact_phone || '',
     data.contact_role || '',
     data.approvers || '',
-    data.partners || ''
+    data.partners || '',
+    data.submission_source || '',
+    data.status || 'new',
+    data.notes || ''
   ]);
 
   return ContentService
@@ -85,8 +125,13 @@ export default function GoogleSheetsSettings() {
       return;
     }
 
-    if (!trimmed.startsWith('https://script.google.com/')) {
-      setError('URL must be a Google Apps Script web app URL (starts with https://script.google.com/)');
+    if (
+      !trimmed.startsWith('https://script.google.com/') &&
+      !trimmed.startsWith('https://script.googleusercontent.com/')
+    ) {
+      setError(
+        'URL must be a Google Apps Script web app URL (starts with https://script.google.com/ or https://script.googleusercontent.com/)'
+      );
       return;
     }
 

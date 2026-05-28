@@ -34,10 +34,9 @@ function isValidGoogleSheetsUrl(url: string): boolean {
   if (!url || typeof url !== "string") return false;
   const trimmed = url.trim().toLowerCase();
 
-  // Only allow Google Sheets webhook URLs
   const validPatterns = [
-    /^https:\/\/script\.google\.com\/macros\/d\/[a-zA-Z0-9_-]+\/usertemplates\/v\d+\/([a-zA-Z0-9_-]+)\/exec/,
-    /^https:\/\/script\.googleusercontent\.com\/macros\/d\/[a-zA-Z0-9_-]+\/usertemplates\/v\d+\/([a-zA-Z0-9_-]+)\/exec/,
+    /^https:\/\/script\.google\.com\/macros\/s\/[a-zA-Z0-9_-]+\/exec(\?.*)?$/,
+    /^https:\/\/script\.googleusercontent\.com\/macros\/s\/[a-zA-Z0-9_-]+\/exec(\?.*)?$/,
   ];
 
   return validPatterns.some((pattern) => pattern.test(trimmed));
@@ -142,6 +141,14 @@ Deno.serve(async (req: Request) => {
       .from("consultation_submissions")
       .insert(payload);
 
+    const sheetPayload = {
+      ...payload,
+      service_areas: JSON.stringify(payload.service_areas),
+      submission_source: sanitizeString(rawPayload.submission_source) || "web_form",
+      status: sanitizeString(rawPayload.status) || "new",
+      notes: sanitizeString(rawPayload.notes) || "",
+    };
+
     if (dbError) {
       return new Response(
         JSON.stringify({ error: "Failed to save submission." }),
@@ -170,21 +177,17 @@ Deno.serve(async (req: Request) => {
         console.error("[SECURITY] Blocked invalid webhook URL:", webhookUrl);
       } else {
         try {
-          // 🔒 CRITICAL FIX: Use redirect: "manual" to prevent open redirect attacks
-          // This prevents the browser/fetch from following arbitrary redirects
           const response = await fetch(webhookUrl, {
             method: "POST",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify(payload),
-            redirect: "manual", // Don't follow redirects
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(sheetPayload),
+            redirect: "manual",
           });
 
-          // Validate response status
           if (!response.ok && response.status !== 302 && response.status !== 301) {
             console.warn(`[SECURITY] Unexpected webhook response: ${response.status}`);
           }
 
-          // If there's a redirect location header, verify it's still a Google domain
           const location = response.headers.get("location");
           if (location && !isValidGoogleSheetsUrl(location)) {
             console.error("[SECURITY] Webhook attempted redirect to invalid URL:", location);

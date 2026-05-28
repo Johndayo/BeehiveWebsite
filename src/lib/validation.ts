@@ -16,9 +16,10 @@ import DOMPurify from 'dompurify';
 export const VALIDATION_RULES = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   PHONE: /^\+?[\d\s\-()]{10,}$/,
-  URL: /^https?:\/\/.+/,
-  WEBHOOK_URL: /^https:\/\/script\.google\.com\/macros\/d\/.*\/usercontent\/\?/,
-  NAME: /^[a-zA-Z\s\-']{1,100}$/,
+  URL: /^https?:\/\/.+/,  
+  WEBHOOK_URL: /^https:\/\/script\.google\.com\/macros\/d\/.*\/usercontent\/\?/,  
+  NAME: /^[a-zA-Z\s\-']{1,100}$/,  
+
   TEXT: /^[a-zA-Z0-9\s\-.,!?()&']{1,5000}$/,
   NUMBER: /^-?\d+(\.\d{1,2})?$/,
   ALPHANUMERIC: /^[a-zA-Z0-9_\-]{1,50}$/,
@@ -172,9 +173,8 @@ export const sanitizer = {
    */
   sanitizeText(text: string): string {
     if (!text || typeof text !== 'string') return '';
-    const trimmed = text.trim();
-    // Remove HTML tags and dangerous characters
-    return DOMPurify.sanitize(trimmed, {
+    // Preserve user-entered spacing while removing HTML tags and dangerous characters
+    return DOMPurify.sanitize(text, {
       ALLOWED_TAGS: [], // No HTML tags allowed
       ALLOWED_ATTR: [],
     });
