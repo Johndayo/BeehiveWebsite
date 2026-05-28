@@ -14,7 +14,7 @@ const TEAM_MEMBERS: TeamMember[] = [
   {
     name: 'Bentex Torlafia',
     title: 'IP Law Consultant & Academic',
-    bio: `*BENTEX TORLAFIA* is an Intellectual Property (IP) Law expert, consultant, and academic. He holds an LLM in Intellectual Property Law with specialisations in Patent Law and Design Law from WIPO/TürkPatent/Ankara University, Turkey, and is an alumnus of the WIPO–Harvard Law School PatentX Programme. He is also an active member of the WIPO International Network for Intellectual Property Education (WINIPE).
+    bio: `BENTEX TORLAFIA is an Intellectual Property (IP) Law expert, consultant, and academic. He holds an LLM in Intellectual Property Law with specialisations in Patent Law and Design Law from WIPO/TürkPatent/Ankara University, Turkey, and is an alumnus of the WIPO–Harvard Law School PatentX Programme. He is also an active member of the WIPO International Network for Intellectual Property Education (WINIPE).
 
 Currently, Bentex is an accredited WIPO Academy IP Tutor and also lectures IP and Law at the Department of Public and Private Law, Faculty of Law, North-Eastern University, Gombe, Gombe State. His research interests centre on digital entertainment, business innovation, and SME development, which form the basis of his ongoing PhD-IP Law at the Faculty of Law, Nasarawa State University, Keffi-Nigeria.
 
@@ -22,7 +22,7 @@ Beyond academia, Bentex is a literary creative artist and the Principal Consulta
 
 An award-winning IP influencer recognised by the JIIPCC Academy in 2024, Bentex also co-leads Nasara Creative, a literary initiative supporting Nigerian Creatives in IP awareness and protection. His work continues to bridge the intersection of Law, research, creativity, and innovation for sustainable development.
 
-He's written and researched extensively and is also the author of a new text on IP titled *INTELLECTUAL PROPERTY NEXUS: The Definitive Guide for Students, Innovators, Entrepreneurs and Practitioners.*`,
+He's written and researched extensively and is also the author of a new text on IP titled INTELLECTUAL PROPERTY NEXUS: The Definitive Guide for Students, Innovators, Entrepreneurs and Practitioners.`,
     image: '/bentex.jpg',
     linkedin: 'https://www.linkedin.com/in/benjamin-terhile-torlafia-3b331465/',
   },
