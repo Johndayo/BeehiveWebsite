@@ -3,6 +3,7 @@ import { Linkedin } from 'lucide-react';
 import useScrollReveal from '../hooks/useScrollReveal';
 
 type TeamMember = {
+  id: string;
   name: string;
   title: string;
   bio: string;
@@ -12,6 +13,7 @@ type TeamMember = {
 
 const TEAM_MEMBERS: TeamMember[] = [
   {
+    id: 'bentex-torlafia',
     name: 'Bentex Torlafia',
     title: 'IP Law Consultant & Academic',
     bio: `BENTEX TORLAFIA is an Intellectual Property (IP) Law expert, consultant, and academic. He holds an LLM in Intellectual Property Law with specialisations in Patent Law and Design Law from WIPO/TürkPatent/Ankara University, Turkey, and is an alumnus of the WIPO–Harvard Law School PatentX Programme. He is also an active member of the WIPO International Network for Intellectual Property Education (WINIPE).
@@ -27,6 +29,7 @@ He's written and researched extensively and is also the author of a new text on 
     linkedin: 'https://www.linkedin.com/in/benjamin-terhile-torlafia-3b331465/',
   },
   {
+    id: 'jummai-ilebaye-abbah',
     name: 'Jummai Ilebaye Abbah',
     title: 'Business Development & Client Relations Specialist',
     bio: `A goal-driven professional with over five years of experience spanning client relationship management, business development, and corporate communication. I bring a strong ability to build and maintain productive relationships while driving organisational growth and operational excellence.
@@ -44,8 +47,8 @@ export default function TeamPage() {
   const cardsRef = useScrollReveal<HTMLDivElement>({ threshold: 0.1 });
   const [expandedMembers, setExpandedMembers] = useState<Record<string, boolean>>({});
 
-  const toggleBioExpansion = (name: string) => {
-    setExpandedMembers((current) => ({ ...current, [name]: !current[name] }));
+  const toggleBioExpansion = (id: string) => {
+    setExpandedMembers((current) => ({ ...current, [id]: !current[id] }));
   };
 
   const getPreviewBio = (bio: string) => {
@@ -77,7 +80,7 @@ export default function TeamPage() {
         <div ref={cardsRef} className="reveal-stagger grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {TEAM_MEMBERS.map((member) => (
             <article
-              key={member.name}
+              key={member.id}
               className="group bg-white rounded-[2rem] border border-navy-100/60 shadow-sm overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
             >
               <div className="relative overflow-hidden h-72 sm:h-80">
@@ -108,7 +111,7 @@ export default function TeamPage() {
                 </div>
 
                 <div className="mt-5 space-y-4 text-sm leading-relaxed text-navy-600">
-                  {(expandedMembers[member.name] ? member.bio : getPreviewBio(member.bio))
+                  {(expandedMembers[member.id] ? member.bio : getPreviewBio(member.bio))
                     .split('\n')
                     .filter(Boolean)
                     .map((paragraph, index) => (
@@ -118,10 +121,10 @@ export default function TeamPage() {
                 {shouldShowReadMore(member.bio) ? (
                   <button
                     type="button"
-                    onClick={() => toggleBioExpansion(member.name)}
+                    onClick={() => toggleBioExpansion(member.id)}
                     className="mt-4 inline-flex items-center text-sm font-semibold text-brand-600 hover:text-brand-700"
                   >
-                    {expandedMembers[member.name] ? 'Read less' : 'Read more'}
+                    {expandedMembers[member.id] ? 'Read less' : 'Read more'}
                   </button>
                 ) : null}
               </div>
