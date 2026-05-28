@@ -71,7 +71,7 @@ function HoneycombAccent() {
 export default function HeroSection({ onNavigate }: HeroSectionProps) {
   return (
     <section
-      className="relative overflow-hidden min-h-[520px] md:min-h-[640px] lg:min-h-[720px] pb-10 sm:pb-16"
+      className="relative overflow-hidden min-h-[480px] md:min-h-[640px] lg:min-h-[720px] pb-8 sm:pb-14"
       aria-label="Hero section - Institutional capacity building and strategic advisory"
     >
       <ProgressiveImage
@@ -96,7 +96,7 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
 
       <HoneycombAccent />
 
-      <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-12 sm:py-24 lg:py-36">
+      <div className="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-10 sm:py-20 lg:py-32">
         <div className="max-w-3xl">
           <div
             className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 border border-brand-500/20 rounded-full mb-6 animate-fade-in-up"
@@ -128,7 +128,7 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
           </p>
 
           <div
-            className="flex flex-col sm:flex-row gap-3 mt-6 sm:mt-8 animate-fade-in-up"
+            className="flex flex-col sm:flex-row gap-3 mt-5 sm:mt-8 animate-fade-in-up"
             style={{ animationDelay: '280ms', animationFillMode: 'both' }}
           >
             <button
@@ -149,7 +149,7 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
           </div>
 
           <div
-            className="flex flex-col gap-4 mt-8 sm:mt-10 animate-fade-in-up sm:flex-row sm:items-center sm:gap-6"
+            className="flex flex-col gap-3 mt-6 sm:mt-10 animate-fade-in-up sm:flex-row sm:items-center sm:gap-6"
             style={{ animationDelay: '400ms', animationFillMode: 'both' }}
           >
             <div className="flex items-center gap-2">
