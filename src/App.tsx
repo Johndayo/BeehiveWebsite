@@ -3,6 +3,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import BackToTop from './components/BackToTop';
 import HomePage from './pages/HomePage';
+import AboutPage from './pages/AboutPage';
 import TeamPage from './pages/TeamPage';
 import ConsultationPage from './pages/ConsultationPage';
 import SettingsPage from './pages/SettingsPage';
@@ -201,6 +202,8 @@ export default function App() {
           )
         ) : page === 'team' ? (
           <TeamPage />
+        ) : page === 'about' ? (
+          <AboutPage onNavigate={navigate} />
         ) : (
           <HomePage onNavigate={navigate} />
         )}
