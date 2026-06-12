@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Search } from 'lucide-react';
 import { countryDialCodes } from '../data/countryCodes';
+import { getFlagUrl, getFlagSrcSet } from '../lib/flags';
 
 interface Props {
   value: string; // full phone string, e.g. "+1 555 123 4567"
@@ -10,7 +11,11 @@ interface Props {
 }
 
 function flagUrlFor(countryName: string) {
-  return `https://countryflagsapi.com/png/${encodeURIComponent(countryName)}`;
+  return getFlagUrl(countryName);
+}
+
+function flagSrcSetFor(countryName: string) {
+  return getFlagSrcSet(countryName);
 }
 
 export default function PhoneCountrySelect({ value, onChange, placeholder = 'Phone number', onBlur }: Props) {
@@ -53,6 +58,7 @@ export default function PhoneCountrySelect({ value, onChange, placeholder = 'Pho
           className="flex items-center gap-2 px-3 py-3 bg-white border border-r-0 border-navy-200 rounded-l-lg text-navy-900"
         >
           <img src={flagUrlFor(Object.keys(countryDialCodes).find(k => countryDialCodes[k] === selectedCode) || '')}
+               srcSet={flagSrcSetFor(Object.keys(countryDialCodes).find(k => countryDialCodes[k] === selectedCode) || '')}
                alt={`Flag for country with dial code ${selectedCode}`}
                className="w-5 h-4 object-cover rounded-sm" onError={(e)=>{(e.target as HTMLImageElement).style.display='none'}} />
           <span className="text-sm">{selectedCode}</span>
@@ -96,6 +102,7 @@ export default function PhoneCountrySelect({ value, onChange, placeholder = 'Pho
               >
                 <img
                   src={flagUrlFor(country)}
+                  srcSet={flagSrcSetFor(country)}
                   alt={`${country} flag`}
                   className="w-5 h-4 object-cover rounded-sm"
                   onError={(e)=>{(e.target as HTMLImageElement).style.display='none'}}

@@ -1,9 +1,15 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const apiGatewayUrl =
+    env.VITE_API_BASE_URL ||
+    'https://hrxefopvcxhowrzyaqpz.supabase.co/functions/v1/api-gateway';
+
+  return {
+    plugins: [react()],
   
   // Performance & SEO optimization
   optimizeDeps: {
@@ -93,9 +99,9 @@ export default defineConfig({
     // 🔒 Proxy API calls to Supabase Edge Functions
     proxy: {
       '/api': {
-        target: 'https://hrxefopvcxhowrzyaqpz.supabase.co/functions/v1/api-gateway',
+        target: apiGatewayUrl,
         changeOrigin: true,
-        rewrite: (path) => path, // Keep /api prefix for backend routing
+        rewrite: (path) => path.replace(/^\/api/, ''), // Strip /api prefix before forwarding to Supabase function
         secure: true,
       },
     },

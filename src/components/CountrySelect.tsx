@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { countries } from '../data/countries';
+import { getFlagUrl, getFlagSrcSet } from '../lib/flags';
 
 interface Props {
   value: string;
@@ -10,9 +11,11 @@ interface Props {
 }
 
 function flagUrlFor(name: string) {
-  // Use a name-based flag CDN that accepts country names.
-  // This service returns PNG flags for many countries.
-  return `https://countryflagsapi.com/png/${encodeURIComponent(name)}`;
+  return getFlagUrl(name);
+}
+
+function flagSrcSetFor(name: string) {
+  return getFlagSrcSet(name);
 }
 
 export default function CountrySelect({ value, onChange, placeholder = 'Select a country', label = 'Country' }: Props) {
@@ -58,6 +61,7 @@ export default function CountrySelect({ value, onChange, placeholder = 'Select a
           {value ? (
             <img
               src={flagUrlFor(value)}
+              srcSet={flagSrcSetFor(value)}
               alt={`${value} flag`}
               className="w-5 h-4 object-cover rounded-sm"
               onError={(e)=>{(e.target as HTMLImageElement).style.display='none'}}
@@ -100,6 +104,7 @@ export default function CountrySelect({ value, onChange, placeholder = 'Select a
                 >
                   <img
                     src={flagUrlFor(c)}
+                    srcSet={flagSrcSetFor(c)}
                     alt={`${c} flag`}
                     className="w-5 h-4 object-cover rounded-sm"
                     onError={(e)=>{(e.target as HTMLImageElement).style.display='none'}}
