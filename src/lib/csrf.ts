@@ -51,6 +51,13 @@ async function hashToken(token: string): Promise<string> {
 
 function normalizeApiGatewayUrl(rawUrl: string): string {
   const trimmed = rawUrl.replace(/\/+$|^\s+|\s+$/g, '');
+
+  // Use the local dev proxy path during development so the browser request
+  // goes through Vite and not directly to the remote Supabase functions endpoint.
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+
   if (/^https?:\/\//.test(trimmed) && !trimmed.endsWith('/api')) {
     return `${trimmed}/api`;
   }
@@ -59,12 +66,22 @@ function normalizeApiGatewayUrl(rawUrl: string): string {
 
 const API_GATEWAY_URL = normalizeApiGatewayUrl(import.meta.env.VITE_API_BASE_URL || '/api');
 
+function getApiGatewayHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (anonKey) {
+    headers.apikey = anonKey;
+    headers.Authorization = `Bearer ${anonKey}`;
+  }
+  return headers;
+}
+
 async function requestCsrfTokenFromServer(): Promise<string> {
   const response = await fetch(`${API_GATEWAY_URL}/csrf-token`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getApiGatewayHeaders(),
     credentials: 'same-origin',
   });
 

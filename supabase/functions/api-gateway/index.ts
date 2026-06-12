@@ -795,6 +795,16 @@ serve(async (request: Request) => {
 
   const url = new URL(request.url);
 
+  function normalizeFunctionPath(path: string): string {
+    const prefix = '/functions/v1/api-gateway';
+    if (path.startsWith(prefix)) {
+      return path.slice(prefix.length) || '/';
+    }
+    return path;
+  }
+
+  const requestPath = normalizeFunctionPath(url.pathname);
+
   try {
     // Parse body for POST requests
     let body: unknown = null;
@@ -806,24 +816,24 @@ serve(async (request: Request) => {
     }
 
     // Route handlers
-    if (url.pathname === "/api/csrf-token" && request.method === "GET") {
+    if (requestPath === "/api/csrf-token" && request.method === "GET") {
       return await handleCsrfTokenRequest(request);
     }
 
-    if (url.pathname === "/api/consultation/submit" && request.method === "POST") {
+    if (requestPath === "/api/consultation/submit" && request.method === "POST") {
       return await handleConsultationSubmit(request, body);
     }
 
-    if (url.pathname === "/api/security/log-event" && request.method === "POST") {
+    if (requestPath === "/api/security/log-event" && request.method === "POST") {
       return await handleSecurityLogEvent(request, body);
     }
 
-    if (url.pathname === "/api/settings" && (request.method === "GET" || request.method === "POST")) {
+    if (requestPath === "/api/settings" && (request.method === "GET" || request.method === "POST")) {
       return await handleSettingsRequest(request, body);
     }
 
     // Health check
-    if (url.pathname === "/api/health" && request.method === "GET") {
+    if (requestPath === "/api/health" && request.method === "GET") {
       return new Response(JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }), {
         status: 200,
         headers: { ...headers, "Content-Type": "application/json" },

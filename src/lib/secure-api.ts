@@ -43,10 +43,27 @@ export interface ApiResponse<T = any> {
 
 function normalizeApiGatewayUrl(rawUrl: string): string {
   const trimmed = rawUrl.replace(/\/+$|^\s+|\s+$/g, '');
+
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+
   if (/^https?:\/\//.test(trimmed) && !trimmed.endsWith('/api')) {
     return `${trimmed}/api`;
   }
   return trimmed;
+}
+
+function getApiGatewayHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (anonKey) {
+    headers.apikey = anonKey;
+    headers.Authorization = `Bearer ${anonKey}`;
+  }
+  return headers;
 }
 
 export class SecureApiClient {
@@ -83,7 +100,7 @@ export class SecureApiClient {
     const url = this.buildEndpoint(endpoint);
 
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      ...getApiGatewayHeaders(),
       ...((options.headers as Record<string, string>) || {}),
     };
 
