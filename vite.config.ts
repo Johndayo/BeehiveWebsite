@@ -10,12 +10,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-  
-  // Performance & SEO optimization
-  optimizeDeps: {
-    exclude: ['lucide-react'],
-    include: ['react', 'react-dom'],
-  },
+
+    // Performance & SEO optimization
+    optimizeDeps: {
+      exclude: ['lucide-react'],
+      include: ['react', 'react-dom'],
+    },
   
   // 🔒 Security: Build configuration + Performance optimization
   build: {
