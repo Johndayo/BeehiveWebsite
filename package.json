@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
+    "@vercel/analytics": "^2.0.1",
     "dompurify": "^3.0.9",
     "i18n-iso-countries": "^7.14.0",
     "lucide-react": "^0.344.0",
