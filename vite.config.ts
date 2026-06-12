@@ -90,7 +90,6 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: apiGatewayUrl,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ''),
           secure: true,
         },
       },

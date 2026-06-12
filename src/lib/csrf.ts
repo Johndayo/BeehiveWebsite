@@ -49,7 +49,15 @@ async function hashToken(token: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-const API_GATEWAY_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+function normalizeApiGatewayUrl(rawUrl: string): string {
+  const trimmed = rawUrl.replace(/\/+$|^\s+|\s+$/g, '');
+  if (/^https?:\/\//.test(trimmed) && !trimmed.endsWith('/api')) {
+    return `${trimmed}/api`;
+  }
+  return trimmed;
+}
+
+const API_GATEWAY_URL = normalizeApiGatewayUrl(import.meta.env.VITE_API_BASE_URL || '/api');
 
 async function requestCsrfTokenFromServer(): Promise<string> {
   const response = await fetch(`${API_GATEWAY_URL}/csrf-token`, {

@@ -41,6 +41,14 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
+function normalizeApiGatewayUrl(rawUrl: string): string {
+  const trimmed = rawUrl.replace(/\/+$|^\s+|\s+$/g, '');
+  if (/^https?:\/\//.test(trimmed) && !trimmed.endsWith('/api')) {
+    return `${trimmed}/api`;
+  }
+  return trimmed;
+}
+
 export class SecureApiClient {
   private baseUrl: string;
   private apiGatewayUrl: string;
@@ -48,7 +56,7 @@ export class SecureApiClient {
   constructor(baseUrl: string = '', apiGatewayUrl: string = '') {
     this.baseUrl = baseUrl || this.detectBaseUrl();
     // API gateway can be different subdomain/service
-    this.apiGatewayUrl = apiGatewayUrl || import.meta.env.VITE_API_BASE_URL || '/api';
+    this.apiGatewayUrl = apiGatewayUrl || normalizeApiGatewayUrl(import.meta.env.VITE_API_BASE_URL || '/api');
   }
 
   private detectBaseUrl(): string {
