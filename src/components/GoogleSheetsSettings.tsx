@@ -224,6 +224,9 @@ export default function GoogleSheetsSettings() {
           <p className="text-sm text-navy-500">
             Automatically send consultation submissions to a Google Sheet.
           </p>
+          <p className="text-xs text-navy-400 mt-1">
+            When configured, new consultation submissions are delivered to Google Sheets first.
+          </p>
         </div>
         {isConnected && (
           <span className="ml-auto flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">

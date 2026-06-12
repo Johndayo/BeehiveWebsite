@@ -94,7 +94,6 @@ export default function Header({ currentPage, onNavigate, onScrollTo }: HeaderPr
             >
               Contact
             </button>
-            <div className="w-px h-6 bg-navy-200 mx-2" />
             <button
               onClick={() => onNavigate('consultation')}
               className="group flex items-center gap-2 px-5 py-2.5 bg-brand-500 text-white text-sm font-semibold rounded-lg hover:bg-accent-500 transition-colors"

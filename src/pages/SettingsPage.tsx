@@ -32,6 +32,12 @@ export default function SettingsPage({ onSignOut, userEmail }: SettingsPageProps
               >
                 Configure external integrations for your consultation workflow.
               </p>
+              <p
+                className="text-navy-300 mt-3 max-w-xl text-xs sm:text-sm leading-relaxed animate-fade-in-up"
+                style={{ animationDelay: '200ms', animationFillMode: 'both' }}
+              >
+                This hidden area is only for integration settings and is not meant for general site access.
+              </p>
             </div>
             <div
               className="hidden sm:flex items-center gap-3 animate-fade-in-up"

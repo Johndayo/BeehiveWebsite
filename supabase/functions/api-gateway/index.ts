@@ -535,6 +535,71 @@ async function handleConsultationSubmit(
       );
     }
 
+    let webhookUrl: string | null = null;
+    try {
+      const webhookResponse = await fetch(
+        `${supabaseUrl}/rest/v1/app_settings?key=eq.google_sheets_webhook`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${supabaseKey}`,
+            apikey: supabaseKey,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (webhookResponse.ok) {
+        const settings = await webhookResponse.json();
+        if (Array.isArray(settings) && settings.length > 0 && settings[0].value) {
+          webhookUrl = String(settings[0].value || '').trim();
+          if (!isValidGoogleSheetsWebhookUrl(webhookUrl)) {
+            console.warn('[API] Invalid Google Sheets webhook URL in settings');
+            webhookUrl = null;
+          }
+        }
+      } else {
+        console.warn('[API] Failed to load webhook settings:', webhookResponse.status);
+      }
+    } catch (settingsErr) {
+      console.warn('[API] Failed to fetch webhook settings:', settingsErr instanceof Error ? settingsErr.message : 'Unknown error');
+    }
+
+    async function postToGoogleSheets(url: string, payload: ValidatedPayload): Promise<boolean> {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload),
+          redirect: 'error',
+          signal: controller.signal,
+          credentials: 'omit',
+        });
+
+        clearTimeout(timeoutId);
+        return response.ok;
+      } catch (webhookErr) {
+        console.warn('[API] Google Sheets webhook failed:', webhookErr instanceof Error ? webhookErr.message : 'Unknown error');
+        return false;
+      }
+    }
+
+    if (webhookUrl) {
+      const sheetSuccess = await postToGoogleSheets(webhookUrl, payload);
+      if (sheetSuccess) {
+        await recordSubmissionRateLimit(ipHash);
+        console.log('[API] Submission saved to Google Sheets primary storage');
+        return new Response(
+          JSON.stringify({ success: true, message: 'Submission received successfully' }),
+          { status: 200, headers: { ...headers, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.warn('[API] Google Sheets primary storage failed; falling back to database storage');
+    }
+
     const dbResponse = await fetch(`${supabaseUrl}/rest/v1/consultation_submissions`, {
       method: 'POST',
       headers: {
@@ -555,55 +620,7 @@ async function handleConsultationSubmit(
     }
 
     await recordSubmissionRateLimit(ipHash);
-
-    // 🔒 Send to Google Sheets webhook if configured
-    try {
-      const webhookResponse = await fetch(
-        `${supabaseUrl}/rest/v1/app_settings?key=eq.google_sheets_webhook`,
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${supabaseKey}`,
-            apikey: supabaseKey,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (webhookResponse.ok) {
-        const settings = await webhookResponse.json();
-        if (Array.isArray(settings) && settings.length > 0 && settings[0].value) {
-          const webhookUrl = settings[0].value;
-
-          if (isValidGoogleSheetsWebhookUrl(webhookUrl)) {
-            try {
-              const controller = new AbortController();
-              const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-              await fetch(webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(payload),
-                redirect: 'error',
-                signal: controller.signal,
-                credentials: 'omit',
-              });
-
-              clearTimeout(timeoutId);
-              console.log('[API] Google Sheets webhook sent successfully');
-            } catch (webhookErr) {
-              console.warn('[API] Google Sheets webhook failed:', webhookErr instanceof Error ? webhookErr.message : 'Unknown error');
-            }
-          } else {
-            console.warn('[API] Invalid Google Sheets webhook URL');
-          }
-        }
-      }
-    } catch (settingsErr) {
-      console.warn('[API] Failed to fetch webhook settings:', settingsErr instanceof Error ? settingsErr.message : 'Unknown error');
-    }
-
-    console.log('[API] Submission success:', payload.contact_email);
+    console.log('[API] Submission saved to Supabase database storage');
 
     return new Response(
       JSON.stringify({

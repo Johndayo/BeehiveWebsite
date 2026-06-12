@@ -72,7 +72,7 @@ export default function LoginPage({ onLogin, onResetPassword }: LoginPageProps) 
           </h1>
           <p className="text-navy-500 text-sm mt-2">
             {mode === 'login'
-              ? 'Sign in to access integration settings'
+              ? 'Sign in to access hidden integration settings for consultation delivery.'
               : 'Enter your email to receive a password reset link'}
           </p>
         </div>
