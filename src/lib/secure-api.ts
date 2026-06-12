@@ -48,7 +48,7 @@ export class SecureApiClient {
   constructor(baseUrl: string = '', apiGatewayUrl: string = '') {
     this.baseUrl = baseUrl || this.detectBaseUrl();
     // API gateway can be different subdomain/service
-    this.apiGatewayUrl = apiGatewayUrl || '/api';
+    this.apiGatewayUrl = apiGatewayUrl || import.meta.env.VITE_API_BASE_URL || '/api';
   }
 
   private detectBaseUrl(): string {
@@ -58,6 +58,13 @@ export class SecureApiClient {
     return `${protocol}//${hostname}${portStr}`;
   }
 
+  private buildEndpoint(endpoint: string): string {
+    if (this.apiGatewayUrl.startsWith('http://') || this.apiGatewayUrl.startsWith('https://')) {
+      return `${this.apiGatewayUrl}${endpoint}`;
+    }
+    return `${this.baseUrl}${this.apiGatewayUrl}${endpoint}`;
+  }
+
   /**
    * Make secure request to API Gateway
    */
@@ -65,7 +72,7 @@ export class SecureApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    const url = `${this.baseUrl}${this.apiGatewayUrl}${endpoint}`;
+    const url = this.buildEndpoint(endpoint);
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
