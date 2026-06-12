@@ -3,10 +3,17 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
-  const apiGatewayUrl =
-    env.VITE_API_BASE_URL ||
-    'https://hrxefopvcxhowrzyaqpz.supabase.co/functions/v1/api-gateway';
+  const env = loadEnv(mode, process.cwd());
+  const supabaseUrl = env.VITE_SUPABASE_URL?.replace(/\/+$/, '');
+  const defaultProxyTarget = 'http://localhost:54321';
+
+  if (!supabaseUrl) {
+    console.warn(
+      '[vite.config] VITE_SUPABASE_URL is not defined. Falling back to',
+      defaultProxyTarget,
+      'for /api proxy target. Set VITE_SUPABASE_URL in .env.local to your Supabase project URL.'
+    );
+  }
 
   return {
     plugins: [react()],
@@ -88,9 +95,10 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         '/api': {
-          target: apiGatewayUrl,
+          target: 'https://hrxefopvcxhowrzyaqpz.supabase.co/functions/v1/api-gateway',
           changeOrigin: true,
-          secure: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api/, ''),
         },
       },
       middlewareMode: false,
