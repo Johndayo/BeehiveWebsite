@@ -16,6 +16,7 @@
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { validateOrigin } from "../_shared/cors.ts";
 
 declare const Deno: {
   env: {
@@ -114,9 +115,7 @@ function getClientIp(headers: Headers): string {
 
 function getCorsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get('origin');
-  const isAllowedOrigin =
-    ALLOWED_ORIGINS.includes(origin || '') ||
-    (Deno.env.get('ENV') === 'development' && DEV_ORIGINS.includes(origin || ''));
+  const isAllowedOrigin = validateOrigin(origin);
 
   const corsHeaders: Record<string, string> = {
     ...SECURITY_HEADERS,
