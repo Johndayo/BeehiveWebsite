@@ -102,6 +102,7 @@ export default function ConsultationForm() {
         setCsrfToken(token);
       } catch (error) {
         console.error('[ConsultationForm] Failed to initialize CSRF token:', error);
+        setSubmitError('Security initialization failed. Please refresh and try again.');
       }
     };
     initCsrf();
@@ -148,19 +149,36 @@ export default function ConsultationForm() {
       return;
     }
 
-    // 🔒 Validate CSRF token before submitting
-    if (!csrfToken) {
-      const error = 'Security token missing. Please refresh and try again.';
-      setSubmitError(error);
-      securityLogger.logCsrfValidationFailed();
-      return;
+    let currentCsrfToken = csrfToken;
+    if (!currentCsrfToken) {
+      try {
+        currentCsrfToken = await csrf.getToken();
+        setCsrfToken(currentCsrfToken);
+      } catch (error) {
+        const errMsg = 'Security token unavailable. Please refresh and try again.';
+        setSubmitError(errMsg);
+        securityLogger.logCsrfValidationFailed();
+        return;
+      }
     }
 
-    if (!(await csrf.validateToken(csrfToken))) {
-      const error = 'Security validation failed. Please refresh and try again.';
-      setSubmitError(error);
-      securityLogger.logCsrfValidationFailed();
-      return;
+    if (!(await csrf.validateToken(currentCsrfToken))) {
+      try {
+        currentCsrfToken = await csrf.refreshToken();
+        setCsrfToken(currentCsrfToken);
+      } catch (error) {
+        const errMsg = 'Security validation failed. Please refresh and try again.';
+        setSubmitError(errMsg);
+        securityLogger.logCsrfValidationFailed();
+        return;
+      }
+
+      if (!(await csrf.validateToken(currentCsrfToken))) {
+        const errMsg = 'Security validation failed. Please refresh and try again.';
+        setSubmitError(errMsg);
+        securityLogger.logCsrfValidationFailed();
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -188,7 +206,7 @@ export default function ConsultationForm() {
       contact_role: sanitizer.sanitizeText(formData.contactRole).trim(),
       approvers: sanitizer.sanitizeText(formData.approvers).trim(),
       partners: sanitizer.sanitizeText(formData.partners).trim(),
-      csrf_token: csrfToken, // Include CSRF token with submission
+      csrf_token: currentCsrfToken, // Include CSRF token with submission
     };
 
     // 🔒 Final validation of critical fields
