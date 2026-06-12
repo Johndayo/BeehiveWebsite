@@ -15,14 +15,14 @@ import DOMPurify from 'dompurify';
 
 export const VALIDATION_RULES = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  PHONE: /^\+?[\d\s\-()]{10,}$/,
-  URL: /^https?:\/\/.+/,  
+  PHONE: /^\+?[\d\s()-]{10,}$/, 
+  URL: /^https?:\/\/\S+$/i,
   WEBHOOK_URL: /^https:\/\/script\.google\.com\/macros\/d\/.*\/usercontent\/\?/,  
-  NAME: /^[a-zA-Z\s\-']{1,100}$/,  
+  NAME: /^[a-zA-Z\s'-]{1,100}$/,  
 
-  TEXT: /^[a-zA-Z0-9\s\-.,!?()&']{1,5000}$/,
+  TEXT: /^[a-zA-Z0-9\s.,!?()&'-]{1,5000}$/,
   NUMBER: /^-?\d+(\.\d{1,2})?$/,
-  ALPHANUMERIC: /^[a-zA-Z0-9_\-]{1,50}$/,
+  ALPHANUMERIC: /^[a-zA-Z0-9_-]{1,50}$/,
 };
 
 // ============================================================================
@@ -94,18 +94,18 @@ export const validator = {
   /**
    * Validates number
    */
-  isValidNumber(value: any): boolean {
+  isValidNumber(value: unknown): boolean {
     if (value === null || value === undefined || value === '') return false;
-    const num = Number(value);
+    const num = Number(value as unknown);
     return !isNaN(num) && isFinite(num);
   },
 
   /**
    * Validates positive integer
    */
-  isValidInteger(value: any, min = 0, max = Infinity): boolean {
+  isValidInteger(value: unknown, min = 0, max = Infinity): boolean {
     if (!this.isValidNumber(value)) return false;
-    const num = Number(value);
+    const num = Number(value as unknown);
     return Number.isInteger(num) && num >= min && num <= max;
   },
 
@@ -137,7 +137,7 @@ export const validator = {
   /**
    * Validates that value is not null/undefined/empty
    */
-  isRequired(value: any): boolean {
+  isRequired(value: unknown): boolean {
     return value !== null && value !== undefined && value !== '';
   },
 
@@ -154,11 +154,12 @@ export const validator = {
    */
   isStrongPassword(password: string): boolean {
     if (!password || typeof password !== 'string' || password.length < 12) return false;
+    const specialChars = "!@#$%^&*()_+-=[]{};':\"\\|,.<>/?";
     return (
       /[A-Z]/.test(password) && // uppercase
       /[a-z]/.test(password) && // lowercase
       /\d/.test(password) && // number
-      /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) // special char
+      [...specialChars].some((char) => password.includes(char))
     );
   },
 };
@@ -253,7 +254,12 @@ export const sanitizer = {
   removeControlCharacters(text: string): string {
     if (!text || typeof text !== 'string') return '';
     // Remove null bytes and control characters (ASCII 0-31 and 127)
-    return text.replace(/[\x00-\x1F\x7F]/g, '');
+    return [...text]
+      .filter((char) => {
+        const code = char.charCodeAt(0);
+        return code > 31 && code !== 127;
+      })
+      .join('');
   },
 
   /**
@@ -267,12 +273,12 @@ export const sanitizer = {
   /**
    * Sanitizes a JSON object recursively
    */
-  sanitizeObject(obj: any): any {
+  sanitizeObject(obj: unknown): unknown {
     if (obj === null || obj === undefined) return obj;
     if (typeof obj === 'string') return this.sanitizeText(obj);
     if (Array.isArray(obj)) return obj.map((item) => this.sanitizeObject(item));
-    if (typeof obj === 'object') {
-      const sanitized: Record<string, any> = {};
+    if (typeof obj === 'object' && obj !== null) {
+      const sanitized: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj)) {
         if (typeof key === 'string' && !key.match(/^__/)) {
           sanitized[key] = this.sanitizeObject(value);

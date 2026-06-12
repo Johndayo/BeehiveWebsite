@@ -15,6 +15,13 @@
  */
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+
+declare const Deno: {
+  env: {
+    get(name: string): string | undefined;
+  };
+};
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -43,6 +50,11 @@ interface ValidatedPayload {
   partners: string;
 }
 
+interface AuthenticatedUser {
+  id: string;
+  email: string | null;
+}
+
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
@@ -62,6 +74,13 @@ const RATE_LIMITS = {
   SUBMISSION_PER_DAY: 10,
 };
 
+const CSRF_TOKEN_LENGTH = 64;
+const CSRF_TOKEN_EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
+const ADMIN_EMAILS = (Deno.env.get("ADMIN_EMAILS") || "")
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+
 const SECURITY_HEADERS = {
   "Content-Security-Policy":
     "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'",
@@ -73,121 +92,265 @@ const SECURITY_HEADERS = {
 };
 
 // ============================================================================
-// RATE LIMIT STORE (In-memory for Deno)
+// HELPERS
 // ============================================================================
 
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
+async function hashString(value: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(value);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
-
-const rateLimitStore = new Map<string, RateLimitEntry>();
-
-function getRateLimitKey(ip: string, email: string, window: string): string {
-  return `${ip}:${email}:${window}`;
-}
-
-function checkAndRecordRateLimit(
-  ip: string,
-  email: string
-): { allowed: boolean; message?: string } {
-  const now = Date.now();
-
-  // Per-minute
-  const minuteKey = getRateLimitKey(ip, email, "minute");
-  let entry = rateLimitStore.get(minuteKey);
-  if (!entry || now >= entry.resetAt) {
-    rateLimitStore.set(minuteKey, { count: 1, resetAt: now + 60_000 });
-  } else {
-    if (entry.count >= RATE_LIMITS.SUBMISSION_PER_MINUTE) {
-      return {
-        allowed: false,
-        message: "Too many requests this minute. Try again in 60 seconds.",
-      };
-    }
-    entry.count++;
-  }
-
-  // Per-hour
-  const hourKey = getRateLimitKey(ip, email, "hour");
-  entry = rateLimitStore.get(hourKey);
-  if (!entry || now >= entry.resetAt) {
-    rateLimitStore.set(hourKey, { count: 1, resetAt: now + 60 * 60 * 1000 });
-  } else {
-    if (entry.count >= RATE_LIMITS.SUBMISSION_PER_HOUR) {
-      return {
-        allowed: false,
-        message: "Too many requests this hour. Try again later.",
-      };
-    }
-    entry.count++;
-  }
-
-  // Per-day
-  const dayKey = getRateLimitKey(ip, email, "day");
-  entry = rateLimitStore.get(dayKey);
-  if (!entry || now >= entry.resetAt) {
-    rateLimitStore.set(dayKey, { count: 1, resetAt: now + 24 * 60 * 60 * 1000 });
-  } else {
-    if (entry.count >= RATE_LIMITS.SUBMISSION_PER_DAY) {
-      return {
-        allowed: false,
-        message: "Daily submission limit reached. Try again tomorrow.",
-      };
-    }
-    entry.count++;
-  }
-
-  // Cleanup old entries (every 1000 checks)
-  if (rateLimitStore.size > 10_000) {
-    const threshold = now - 24 * 60 * 60 * 1000;
-    for (const [key, value] of rateLimitStore.entries()) {
-      if (value.resetAt < threshold) {
-        rateLimitStore.delete(key);
-      }
-    }
-  }
-
-  return { allowed: true };
-}
-
-// ============================================================================
-// SECURITY HELPERS
-// ============================================================================
 
 function getClientIp(headers: Headers): string {
   return (
-    headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    headers.get("cf-connecting-ip") ||
-    headers.get("x-real-ip") ||
-    "unknown"
+    headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    headers.get('cf-connecting-ip') ||
+    headers.get('x-real-ip') ||
+    'unknown'
   );
 }
 
 function getCorsHeaders(request: Request): Record<string, string> {
-  const origin = request.headers.get("origin");
+  const origin = request.headers.get('origin');
   const isAllowedOrigin =
-    ALLOWED_ORIGINS.includes(origin || "") ||
-    (Deno.env.get("ENV") === "development" && DEV_ORIGINS.includes(origin || ""));
+    ALLOWED_ORIGINS.includes(origin || '') ||
+    (Deno.env.get('ENV') === 'development' && DEV_ORIGINS.includes(origin || ''));
 
   const corsHeaders: Record<string, string> = {
     ...SECURITY_HEADERS,
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, x-csrf-token",
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, x-csrf-token, Authorization',
   };
 
   if (isAllowedOrigin) {
-    corsHeaders["Access-Control-Allow-Origin"] = origin || "";
-    corsHeaders["Access-Control-Allow-Credentials"] = "true";
+    corsHeaders['Access-Control-Allow-Origin'] = origin || '';
+    corsHeaders['Access-Control-Allow-Credentials'] = 'true';
   }
 
   return corsHeaders;
 }
 
+function isValidAdminEmail(email: string | null): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email.toLowerCase());
+}
+
+function getBearerToken(request: Request): string | null {
+  const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+  if (!authHeader) return null;
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : null;
+}
+
+function createSupabaseClient(): ReturnType<typeof createClient> | null {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !supabaseKey) return null;
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false },
+  });
+}
+
+async function getStoredCsrfTokenHash(token: string): Promise<boolean> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !supabaseKey) return false;
+
+  const tokenHash = await hashString(token);
+  const now = new Date().toISOString();
+  const queryUrl = `${supabaseUrl}/rest/v1/csrf_tokens?select=token_hash&token_hash=eq.${encodeURIComponent(tokenHash)}&expires_at=gt.${encodeURIComponent(now)}`;
+
+  const response = await fetch(queryUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+      apikey: supabaseKey,
+      'Content-Type': 'application/json',
+      Prefer: 'count=exact',
+    },
+  });
+
+  if (!response.ok) return false;
+  const result = await response.json();
+  return Array.isArray(result) && result.length > 0;
+}
+
+async function consumeCsrfToken(token: string): Promise<boolean> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !supabaseKey) return false;
+
+  const tokenHash = await hashString(token);
+  const queryUrl = `${supabaseUrl}/rest/v1/csrf_tokens?token_hash=eq.${encodeURIComponent(tokenHash)}`;
+
+  const response = await fetch(queryUrl, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+      apikey: supabaseKey,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+  });
+
+  return response.ok;
+}
+
+async function createCsrfToken(request: Request): Promise<Response> {
+  const headers = getCorsHeaders(request);
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !supabaseKey) {
+    return new Response(JSON.stringify({ success: false, error: 'Server configuration error' }), {
+      status: 500,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const token = generateSecureToken(CSRF_TOKEN_LENGTH);
+  const tokenHash = await hashString(token);
+  const expiresAt = new Date(Date.now() + CSRF_TOKEN_EXPIRY_MS).toISOString();
+  const clientIp = getClientIp(request.headers);
+
+  const insertUrl = `${supabaseUrl}/rest/v1/csrf_tokens`;
+  const insertResponse = await fetch(insertUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+      apikey: supabaseKey,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+      client_ip: clientIp,
+    }),
+  });
+
+  if (!insertResponse.ok) {
+    console.error('[API] Failed to store CSRF token', insertResponse.status, await insertResponse.text());
+    return new Response(JSON.stringify({ success: false, error: 'Server error' }), {
+      status: 500,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+    });
+  }
+
+  return new Response(JSON.stringify({ success: true, csrf_token: token }), {
+    status: 200,
+    headers: { ...headers, 'Content-Type': 'application/json' },
+  });
+}
+
+function generateSecureToken(length = CSRF_TOKEN_LENGTH): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => chars[byte % chars.length]).join('');
+}
+
+async function verifyAdminUser(request: Request): Promise<{ valid: boolean; status: number; message: string; user?: AuthenticatedUser }> {
+  const token = getBearerToken(request);
+  if (!token) {
+    return { valid: false, status: 401, message: 'Missing authorization token' };
+  }
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !supabaseKey) {
+    return { valid: false, status: 500, message: 'Server configuration error' };
+  }
+
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: supabaseKey,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    return { valid: false, status: 401, message: 'Unauthorized' };
+  }
+
+  const data = await response.json();
+  const email = data?.email ?? null;
+  if (!email || !isValidAdminEmail(email)) {
+    return { valid: false, status: 403, message: 'Forbidden' };
+  }
+
+  return {
+    valid: true,
+    status: 200,
+    message: 'Authorized',
+    user: { id: String(data?.id || ''), email },
+  };
+}
+
+async function validateCsrfToken(token: unknown): Promise<boolean> {
+  if (!token || typeof token !== 'string') return false;
+  if (!/^[a-zA-Z0-9]{32,}$/.test(token)) return false;
+
+  const isValid = await getStoredCsrfTokenHash(token);
+  if (!isValid) return false;
+
+  return await consumeCsrfToken(token);
+}
+
+async function getSubmissionCount(ipHash: string, sinceIso: string): Promise<number> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !supabaseKey) return 0;
+
+  const queryUrl = `${supabaseUrl}/rest/v1/submission_rate_limits?ip_hash=eq.${encodeURIComponent(
+    ipHash
+  )}&created_at=gt.${encodeURIComponent(sinceIso)}`;
+
+  const response = await fetch(queryUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+      apikey: supabaseKey,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) return 0;
+
+  const data = await response.json();
+  return Array.isArray(data) ? data.length : 0;
+}
+
+async function recordSubmissionRateLimit(ipHash: string): Promise<void> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !supabaseKey) return;
+
+  await fetch(`${supabaseUrl}/rest/v1/submission_rate_limits`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${supabaseKey}`,
+      apikey: supabaseKey,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({ ip_hash: ipHash }),
+  });
+}
+
 function sanitizeText(value: unknown, maxLength = 5000): string {
   if (typeof value !== "string") return "";
   // Remove null bytes and control characters
-  let sanitized = String(value).replace(/[\x00-\x1F\x7F]/g, "");
+  let sanitized = String(value)
+    .split('')
+    .filter((char) => {
+      const code = char.charCodeAt(0);
+      return code >= 0x20 && code !== 0x7f;
+    })
+    .join('');
   // Trim
   sanitized = sanitized.trim();
   // Normalize whitespace
@@ -214,10 +377,16 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-function validateCsrfToken(token: unknown): boolean {
-  if (!token || typeof token !== "string") return false;
-  // Token should be alphanumeric and 32+ characters
-  return /^[a-zA-Z0-9]{32,}$/.test(token);
+function isValidGoogleSheetsWebhookUrl(url: string): boolean {
+  if (!isValidUrl(url)) return false;
+
+  try {
+    const parsed = new URL(url.trim());
+    const allowedHosts = ["script.google.com", "script.googleusercontent.com"];
+    return allowedHosts.includes(parsed.hostname);
+  } catch {
+    return false;
+  }
 }
 
 // ============================================================================
@@ -304,143 +473,295 @@ async function handleConsultationSubmit(
 
   try {
     // Validate CSRF token
-    const csrfToken = request.headers.get("x-csrf-token");
-    if (!validateCsrfToken(csrfToken)) {
-      console.warn("[API] CSRF validation failed");
+    const csrfToken = request.headers.get('x-csrf-token');
+    if (!(await validateCsrfToken(csrfToken))) {
+      console.warn('[API] CSRF validation failed');
       return new Response(
-        JSON.stringify({ success: false, error: "Security validation failed" }),
-        { status: 403, headers: { ...headers, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: 'Security validation failed' }),
+        { status: 403, headers: { ...headers, 'Content-Type': 'application/json' } }
       );
     }
 
     // Validate and sanitize payload
     const validation = validateConsultationPayload(body);
     if (!validation.valid) {
-      console.warn("[API] Validation failed:", validation.error);
+      console.warn('[API] Validation failed:', validation.error);
       return new Response(
-        JSON.stringify({ success: false, error: validation.error || "Invalid input" }),
-        { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: validation.error || 'Invalid input' }),
+        { status: 400, headers: { ...headers, 'Content-Type': 'application/json' } }
       );
     }
 
     const payload = validation.data!;
 
-    // Rate limiting
-    const rateLimit = checkAndRecordRateLimit(clientIp, payload.contact_email);
-    if (!rateLimit.allowed) {
-      console.warn("[API] Rate limit exceeded:", payload.contact_email);
+    // Rate limiting by hashed IP
+    const ipHash = await hashString(clientIp);
+    const now = Date.now();
+    const minuteCount = await getSubmissionCount(ipHash, new Date(now - 60_000).toISOString());
+    if (minuteCount >= RATE_LIMITS.SUBMISSION_PER_MINUTE) {
+      console.warn('[API] Rate limit exceeded: minute', clientIp);
       return new Response(
-        JSON.stringify({ success: false, error: rateLimit.message }),
-        { status: 429, headers: { ...headers, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: 'Too many requests this minute. Try again in 60 seconds.' }),
+        { status: 429, headers: { ...headers, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Submit to Supabase
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const hourCount = await getSubmissionCount(ipHash, new Date(now - 60 * 60 * 1000).toISOString());
+    if (hourCount >= RATE_LIMITS.SUBMISSION_PER_HOUR) {
+      console.warn('[API] Rate limit exceeded: hour', clientIp);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Too many requests this hour. Try again later.' }),
+        { status: 429, headers: { ...headers, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const dayCount = await getSubmissionCount(ipHash, new Date(now - 24 * 60 * 60 * 1000).toISOString());
+    if (dayCount >= RATE_LIMITS.SUBMISSION_PER_DAY) {
+      console.warn('[API] Rate limit exceeded: day', clientIp);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Daily submission limit reached. Try again tomorrow.' }),
+        { status: 429, headers: { ...headers, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error("[API] Missing Supabase config");
+      console.error('[API] Missing Supabase config');
       return new Response(
-        JSON.stringify({ success: false, error: "Server configuration error" }),
-        { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: 'Server configuration error' }),
+        { status: 500, headers: { ...headers, 'Content-Type': 'application/json' } }
       );
     }
 
     const dbResponse = await fetch(`${supabaseUrl}/rest/v1/consultation_submissions`, {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${supabaseKey}`,
         apikey: supabaseKey,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
       },
       body: JSON.stringify(payload),
     });
 
     if (!dbResponse.ok) {
-      console.error(
-        "[API] Database error:",
-        dbResponse.status,
-        await dbResponse.text()
-      );
+      console.error('[API] Database error:', dbResponse.status, await dbResponse.text());
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to save submission" }),
-        { status: 500, headers: { ...headers, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: 'Failed to save submission' }),
+        { status: 500, headers: { ...headers, 'Content-Type': 'application/json' } }
       );
     }
 
+    await recordSubmissionRateLimit(ipHash);
+
     // 🔒 Send to Google Sheets webhook if configured
     try {
-      const webhookResponse = await fetch(`${supabaseUrl}/rest/v1/app_settings?key=eq.google_sheets_webhook`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${supabaseKey}`,
-          apikey: supabaseKey,
-          "Content-Type": "application/json",
-        },
-      });
+      const webhookResponse = await fetch(
+        `${supabaseUrl}/rest/v1/app_settings?key=eq.google_sheets_webhook`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${supabaseKey}`,
+            apikey: supabaseKey,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (webhookResponse.ok) {
         const settings = await webhookResponse.json();
         if (Array.isArray(settings) && settings.length > 0 && settings[0].value) {
           const webhookUrl = settings[0].value;
 
-          // Validate webhook URL to prevent SSRF
-          if (isValidUrl(webhookUrl) && webhookUrl.includes("script.google.com")) {
+          if (isValidGoogleSheetsWebhookUrl(webhookUrl)) {
             try {
-              // Send to Google Sheets with timeout
               const controller = new AbortController();
               const timeoutId = setTimeout(() => controller.abort(), 5000);
 
               await fetch(webhookUrl, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain" },
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(payload),
-                redirect: "error",
+                redirect: 'error',
                 signal: controller.signal,
-                credentials: "omit",
+                credentials: 'omit',
               });
 
               clearTimeout(timeoutId);
-              console.log("[API] Google Sheets webhook sent successfully");
+              console.log('[API] Google Sheets webhook sent successfully');
             } catch (webhookErr) {
-              console.warn(
-                "[API] Google Sheets webhook failed:",
-                webhookErr instanceof Error ? webhookErr.message : "Unknown error"
-              );
-              // Don't fail the submission if webhook fails
+              console.warn('[API] Google Sheets webhook failed:', webhookErr instanceof Error ? webhookErr.message : 'Unknown error');
             }
           } else {
-            console.warn("[API] Invalid Google Sheets webhook URL");
+            console.warn('[API] Invalid Google Sheets webhook URL');
           }
         }
       }
     } catch (settingsErr) {
-      console.warn(
-        "[API] Failed to fetch webhook settings:",
-        settingsErr instanceof Error ? settingsErr.message : "Unknown error"
-      );
-      // Don't fail the submission if settings fetch fails
+      console.warn('[API] Failed to fetch webhook settings:', settingsErr instanceof Error ? settingsErr.message : 'Unknown error');
     }
 
-    // Success
-    console.log("[API] Submission success:", payload.contact_email);
+    console.log('[API] Submission success:', payload.contact_email);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Submission received successfully",
+        message: 'Submission received successfully',
       }),
-      { status: 200, headers: { ...headers, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...headers, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error("[API] Unhandled error:", error);
+    console.error('[API] Unhandled error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: "An error occurred" }),
-      { status: 500, headers: getCorsHeaders(request), "Content-Type": "application/json" } as any
+      JSON.stringify({ success: false, error: 'An error occurred' }),
+      { status: 500, headers: { ...getCorsHeaders(request), 'Content-Type': 'application/json' } }
     );
   }
+}
+
+async function handleCsrfTokenRequest(request: Request): Promise<Response> {
+  return await createCsrfToken(request);
+}
+
+async function handleSecurityLogEvent(request: Request, body: unknown): Promise<Response> {
+  const headers = getCorsHeaders(request);
+  const csrfToken = request.headers.get('x-csrf-token');
+
+  if (!(await validateCsrfToken(csrfToken))) {
+    return new Response(JSON.stringify({ success: false, error: 'Security validation failed' }), {
+      status: 403,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    if (!body || typeof body !== 'object') {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid log payload' }), {
+        status: 400,
+        headers: { ...headers, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const event = body as Record<string, unknown>;
+    console.log('[SecurityLog] Event received:', {
+      type: String(event.type || 'UNKNOWN'),
+      action: String(event.action || 'unknown'),
+      status: String(event.status || 'unknown'),
+      details: event.details || {},
+      userAgent: request.headers.get('user-agent') || null,
+    });
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('[SecurityLog] Failed to process event:', error);
+    return new Response(JSON.stringify({ success: false, error: 'Could not log event' }), {
+      status: 500,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+async function handleSettingsRequest(request: Request, body: unknown): Promise<Response> {
+  const headers = getCorsHeaders(request);
+
+  const authResult = await verifyAdminUser(request);
+  if (!authResult.valid) {
+    return new Response(JSON.stringify({ success: false, error: authResult.message }), {
+      status: authResult.status,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !supabaseKey) {
+    return new Response(JSON.stringify({ success: false, error: 'Server configuration error' }), {
+      status: 500,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+    });
+  }
+
+  if (request.method === 'GET') {
+    const response = await fetch(`${supabaseUrl}/rest/v1/app_settings?select=key,value&key=eq.google_sheets_webhook`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${supabaseKey}`,
+        apikey: supabaseKey,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error('[API] Settings read failed', response.status, await response.text());
+      return new Response(JSON.stringify({ success: false, error: 'Failed to load settings' }), {
+        status: 500,
+        headers: { ...headers, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const settings = await response.json();
+    return new Response(JSON.stringify({ success: true, data: settings }), {
+      status: 200,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+    });
+  }
+
+  if (request.method === 'POST') {
+    if (!body || typeof body !== 'object') {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid request body' }), {
+        status: 400,
+        headers: { ...headers, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const payload = body as Record<string, unknown>;
+    const rawValue = String(payload.google_sheets_webhook || '').trim();
+    if (!rawValue || !isValidGoogleSheetsWebhookUrl(rawValue)) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid webhook URL' }), {
+        status: 400,
+        headers: { ...headers, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const upsertResponse = await fetch(`${supabaseUrl}/rest/v1/app_settings?on_conflict=key`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${supabaseKey}`,
+        apikey: supabaseKey,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify([
+        {
+          key: 'google_sheets_webhook',
+          value: rawValue,
+        },
+      ]),
+    });
+
+    if (!upsertResponse.ok) {
+      console.error('[API] Settings update failed', upsertResponse.status, await upsertResponse.text());
+      return new Response(JSON.stringify({ success: false, error: 'Failed to save settings' }), {
+        status: 500,
+        headers: { ...headers, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+    });
+  }
+
+  return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), {
+    status: 405,
+    headers: { ...headers, 'Content-Type': 'application/json' },
+  });
 }
 
 // ============================================================================
@@ -468,8 +789,20 @@ serve(async (request: Request) => {
     }
 
     // Route handlers
+    if (url.pathname === "/api/csrf-token" && request.method === "GET") {
+      return await handleCsrfTokenRequest(request);
+    }
+
     if (url.pathname === "/api/consultation/submit" && request.method === "POST") {
       return await handleConsultationSubmit(request, body);
+    }
+
+    if (url.pathname === "/api/security/log-event" && request.method === "POST") {
+      return await handleSecurityLogEvent(request, body);
+    }
+
+    if (url.pathname === "/api/settings" && (request.method === "GET" || request.method === "POST")) {
+      return await handleSettingsRequest(request, body);
     }
 
     // Health check
@@ -494,375 +827,3 @@ serve(async (request: Request) => {
   }
 });
 
-// ============================================================================
-// WEBHOOK VALIDATION
-// ============================================================================
-
-function validateWebhookUrl(url: string): { valid: boolean; reason?: string } {
-  if (!url || typeof url !== "string") {
-    return { valid: false, reason: "Invalid URL" };
-  }
-
-  try {
-    const parsed = new URL(url);
-
-    // HTTPS only
-    if (parsed.protocol !== "https:") {
-      return { valid: false, reason: "HTTPS required" };
-    }
-
-    // Whitelist domains
-    const allowed = ["script.google.com", "script.googleusercontent.com"];
-    if (!allowed.includes(parsed.hostname)) {
-      return { valid: false, reason: "Domain not allowed" };
-    }
-
-    // No path traversal
-    if (parsed.pathname.includes("..") || url.includes("%2e%2e")) {
-      return { valid: false, reason: "Invalid path" };
-    }
-
-    // No URL in query parameters
-    for (const [, value] of parsed.searchParams) {
-      if (value.includes("http://") || value.includes("https://")) {
-        return { valid: false, reason: "Invalid query parameters" };
-      }
-    }
-
-    // No IP addresses
-    const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
-    if (ipv4Pattern.test(parsed.hostname)) {
-      return { valid: false, reason: "IP not allowed" };
-    }
-
-    // URL length limit
-    if (url.length > 2048) {
-      return { valid: false, reason: "URL too long" };
-    }
-
-    return { valid: true };
-  } catch (error) {
-    return { valid: false, reason: "Invalid URL format" };
-  }
-}
-
-// ============================================================================
-// MAIN HANDLER
-// ============================================================================
-
-Deno.serve(async (req: Request) => {
-  const origin = req.headers.get("origin");
-  const corsOptions = validateOrigin(origin);
-  const corsHeaders = buildCorsHeaders(corsOptions);
-
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    if (!corsOptions.isAllowed) {
-      return new Response("CORS rejected", {
-        status: 403,
-        headers: corsHeaders,
-      });
-    }
-
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders,
-    });
-  }
-
-  // Block if origin not allowed
-  if (!corsOptions.isAllowed) {
-    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
-      status: 403,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  try {
-    const url = new URL(req.url);
-    const pathname = url.pathname;
-
-    // Route to appropriate handler
-    if (pathname === "/api/submit-consultation" && req.method === "POST") {
-      return await handleSubmitConsultation(req, corsHeaders);
-    } else if (pathname === "/api/rate-limit" && req.method === "GET") {
-      return await handleRateLimit(req, corsHeaders);
-    } else if (pathname === "/api/session" && req.method === "GET") {
-      return await handleSession(req, corsHeaders);
-    } else if (pathname === "/api/auth/login" && req.method === "POST") {
-      return await handleLogin(req, corsHeaders);
-    } else if (pathname === "/api/auth/logout" && req.method === "POST") {
-      return await handleLogout(req, corsHeaders);
-    } else if (pathname === "/api/auth/reset-password" && req.method === "POST") {
-      return await handleResetPassword(req, corsHeaders);
-    } else if (pathname === "/api/settings" && req.method === "GET") {
-      return await handleGetSettings(req, corsHeaders);
-    } else if (pathname === "/api/settings" && req.method === "PUT") {
-      return await handleUpdateSettings(req, corsHeaders);
-    }
-
-    return new Response(JSON.stringify({ error: "Not found" }), {
-      status: 404,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("[API] Unexpected error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  }
-});
-
-// ============================================================================
-// ENDPOINT HANDLERS
-// ============================================================================
-
-async function handleSubmitConsultation(
-  req: Request,
-  corsHeaders: Record<string, string>
-) {
-  const csrfToken = req.headers.get("x-csrf-token");
-
-  // Validate CSRF token
-  if (!validateCsrfToken(csrfToken)) {
-    return new Response(JSON.stringify({ error: "CSRF validation failed" }), {
-      status: 403,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // Get client IP
-  const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") || "unknown";
-  const ipHash = await hashIP(clientIp);
-
-  // Check rate limits
-  const rateLimitCheck = await checkRateLimits(ipHash);
-  if (!rateLimitCheck.allowed) {
-    return new Response(JSON.stringify({ error: rateLimitCheck.message }), {
-      status: 429,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-        "Retry-After": (rateLimitCheck.retryAfter || 60).toString(),
-      },
-    });
-  }
-
-  // Parse and validate payload
-  const rawPayload = await req.json().catch(() => ({}));
-
-  const payload = {
-    organization_name: sanitizeString(rawPayload.organization_name),
-    industry: sanitizeString(rawPayload.industry),
-    industry_other: sanitizeString(rawPayload.industry_other),
-    country: sanitizeString(rawPayload.country),
-    website: sanitizeString(rawPayload.website),
-    employees: sanitizeString(rawPayload.employees),
-    service_areas: sanitizeArray(rawPayload.service_areas),
-    service_area_other: sanitizeString(rawPayload.service_area_other),
-    key_challenge: sanitizeString(rawPayload.key_challenge),
-    desired_outcome: sanitizeString(rawPayload.desired_outcome),
-    reform_context: sanitizeString(rawPayload.reform_context),
-    start_date: sanitizeString(rawPayload.start_date),
-    timeline: sanitizeString(rawPayload.timeline),
-    budget_approved: sanitizeString(rawPayload.budget_approved),
-    contact_name: sanitizeString(rawPayload.contact_name),
-    contact_email: sanitizeString(rawPayload.contact_email),
-    contact_phone: sanitizeString(rawPayload.contact_phone),
-    contact_role: sanitizeString(rawPayload.contact_role),
-    approvers: sanitizeString(rawPayload.approvers),
-    partners: sanitizeString(rawPayload.partners),
-  };
-
-  // Validate required fields
-  if (
-    !payload.organization_name ||
-    !payload.key_challenge ||
-    !payload.desired_outcome ||
-    !payload.contact_name
-  ) {
-    return new Response(JSON.stringify({ error: "Missing required fields" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  if (!payload.contact_email || !isValidEmail(payload.contact_email)) {
-    return new Response(JSON.stringify({ error: "Invalid email address" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // Save to database
-  const { error: dbError } = await supabase
-    .from("consultation_submissions")
-    .insert(payload);
-
-  if (dbError) {
-    console.error("[API] Database error:", dbError);
-    return new Response(JSON.stringify({ error: "Failed to save submission" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  // Record rate limit hit
-  await supabase.from("submission_rate_limits").insert({
-    ip_hash: ipHash,
-    submitted_at: new Date().toISOString(),
-  });
-
-  // Send to webhook if configured
-  try {
-    const { data: setting } = await supabase
-      .from("app_settings")
-      .select("value")
-      .eq("key", "google_sheets_webhook")
-      .maybeSingle();
-
-    if (setting?.value) {
-      const validation = validateWebhookUrl(setting.value);
-      if (validation.valid) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        try {
-          await fetch(setting.value, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-            redirect: "error", // ✅ FIXED: No redirect following
-            signal: controller.signal,
-            credentials: "omit",
-          });
-        } catch (error) {
-          console.warn("[Webhook] Failed:", error instanceof Error ? error.message : "Unknown error");
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      }
-    }
-  } catch (error) {
-    console.warn("[Webhook] Error:", error);
-  }
-
-  return new Response(
-    JSON.stringify({ success: true, message: "Submission received" }),
-    {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
-  );
-}
-
-async function handleRateLimit(
-  req: Request,
-  corsHeaders: Record<string, string>
-) {
-  const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") || "unknown";
-  const ipHash = await hashIP(clientIp);
-
-  const { allowed } = await checkRateLimits(ipHash);
-
-  return new Response(
-    JSON.stringify({
-      allowed,
-      remaining: allowed ? SUBMISSION_LIMITS.per_hour : 0,
-    }),
-    {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
-  );
-}
-
-async function handleSession(
-  req: Request,
-  corsHeaders: Record<string, string>
-) {
-  // TODO: Implement session checking with JWT
-  return new Response(
-    JSON.stringify({ authenticated: false }),
-    {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
-  );
-}
-
-async function handleLogin(
-  req: Request,
-  corsHeaders: Record<string, string>
-) {
-  // TODO: Implement secure login with brute-force protection
-  return new Response(
-    JSON.stringify({ error: "Not implemented" }),
-    {
-      status: 501,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
-  );
-}
-
-async function handleLogout(
-  req: Request,
-  corsHeaders: Record<string, string>
-) {
-  // TODO: Implement logout with session invalidation
-  return new Response(
-    JSON.stringify({ success: true }),
-    {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
-  );
-}
-
-async function handleResetPassword(
-  req: Request,
-  corsHeaders: Record<string, string>
-) {
-  // TODO: Implement password reset
-  return new Response(
-    JSON.stringify({ error: "Not implemented" }),
-    {
-      status: 501,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
-  );
-}
-
-async function handleGetSettings(
-  req: Request,
-  corsHeaders: Record<string, string>
-) {
-  // TODO: Implement with authentication check
-  return new Response(
-    JSON.stringify({ error: "Unauthorized" }),
-    {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
-  );
-}
-
-async function handleUpdateSettings(
-  req: Request,
-  corsHeaders: Record<string, string>
-) {
-  // TODO: Implement with authentication + validation
-  return new Response(
-    JSON.stringify({ error: "Unauthorized" }),
-    {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    }
-  );
-}

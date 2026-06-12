@@ -17,7 +17,7 @@
 // ============================================================================
 
 const CSRF_TOKEN_KEY = 'x-csrf-token';
-const CSRF_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CSRF_TOKEN_EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
 const CSRF_TOKEN_LENGTH = 32;
 
 // ============================================================================
@@ -49,6 +49,27 @@ async function hashToken(token: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+async function requestCsrfTokenFromServer(): Promise<string> {
+  const response = await fetch('/api/csrf-token', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to obtain CSRF token from server');
+  }
+
+  const data = await response.json();
+  if (!data?.success || typeof data.csrf_token !== 'string') {
+    throw new Error('Invalid CSRF token response from server');
+  }
+
+  return data.csrf_token;
+}
+
 // ============================================================================
 // SESSION STORAGE (Server-side equivalent in API)
 // ============================================================================
@@ -70,7 +91,7 @@ export const csrfTokenStorage = {
    * Creates a new CSRF token entry
    */
   async create(): Promise<CsrfTokenData> {
-    const token = generateSecureToken();
+    const token = await requestCsrfTokenFromServer();
     const hash = await hashToken(token);
     const nonce = generateSecureToken(16);
 
@@ -268,7 +289,7 @@ import * as React from 'react';
 /**
  * Wraps a form submission handler to validate CSRF token
  */
-export function withCsrfProtection<T extends any[], R>(
+export function withCsrfProtection<T extends readonly unknown[], R>(
   handler: (token: string, ...args: T) => Promise<R> | R
 ): (...args: T) => Promise<R> {
   return async (...args: T): Promise<R> => {

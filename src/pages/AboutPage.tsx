@@ -49,7 +49,6 @@ const SECTORS = [
 export default function AboutPage({ onNavigate }: AboutPageProps) {
   const headingRef = useScrollReveal<HTMLDivElement>();
   const valuesRef = useScrollReveal<HTMLDivElement>({ threshold: 0.15 });
-  const sectorsRef = useScrollReveal<HTMLDivElement>({ threshold: 0.15 });
 
   return (
     <main className="flex-1">

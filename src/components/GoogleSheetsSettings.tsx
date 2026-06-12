@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileSpreadsheet, Save, Loader2, CheckCircle, ExternalLink, AlertCircle, Copy, Check } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 
 const APPS_SCRIPT_CODE = `function doPost(e) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
@@ -101,22 +101,48 @@ export default function GoogleSheetsSettings() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
+  const { session, loading: authLoading } = useAuth();
+
   useEffect(() => {
     async function loadSetting() {
-      const { data } = await supabase
-        .from('app_settings')
-        .select('value')
-        .eq('key', 'google_sheets_webhook')
-        .maybeSingle();
+      if (authLoading) return;
 
-      if (data?.value) {
-        setWebhookUrl(data.value);
-        setSavedUrl(data.value);
+      if (!session?.access_token) {
+        setError('You must be signed in to load settings.');
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      try {
+        const response = await fetch('/api/settings', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          setError(payload?.error || 'Failed to load settings.');
+          return;
+        }
+
+        const payload = await response.json();
+        if (payload?.success && Array.isArray(payload?.data) && payload.data.length > 0) {
+          const value = String(payload.data[0].value || '');
+          setWebhookUrl(value);
+          setSavedUrl(value);
+        }
+      } catch {
+        setError('Unable to load settings. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
     }
+
     loadSetting();
-  }, []);
+  }, [session, authLoading]);
 
   async function handleSave() {
     const trimmed = webhookUrl.trim();
@@ -135,27 +161,39 @@ export default function GoogleSheetsSettings() {
       return;
     }
 
+    if (!session?.access_token) {
+      setError('You must be signed in to save settings.');
+      return;
+    }
+
     setSaving(true);
     setError('');
     setSaveSuccess(false);
 
-    const { error: upsertError } = await supabase
-      .from('app_settings')
-      .upsert(
-        { key: 'google_sheets_webhook', value: trimmed, updated_at: new Date().toISOString() },
-        { onConflict: 'key' }
-      );
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ google_sheets_webhook: trimmed }),
+      });
 
-    setSaving(false);
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        setError(result?.error || 'Failed to save. Please try again.');
+        return;
+      }
 
-    if (upsertError) {
-      setError('Failed to save. Please try again.');
-      return;
+      setSavedUrl(trimmed);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch {
+      setError('Failed to save. Please try again later.');
+    } finally {
+      setSaving(false);
     }
-
-    setSavedUrl(trimmed);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
   }
 
   function handleCopy() {
