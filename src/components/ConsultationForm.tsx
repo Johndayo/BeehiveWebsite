@@ -4,7 +4,6 @@ import { initialFormData } from '../types/form';
 import type { FormData, StepErrors } from '../types/form';
 import { apiClient } from '../lib/secure-api';
 import { validator, sanitizer, validate } from '../lib/validation';
-import { csrf } from '../lib/csrf';
 import { securityLogger, SecurityEventType, EventSeverity } from '../lib/monitoring/logger';
 import ProgressBar from './ProgressBar';
 import StepIndicator from './StepIndicator';
@@ -92,21 +91,6 @@ export default function ConsultationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [csrfToken, setCsrfToken] = useState('');
-
-  // 🔒 Initialize CSRF protection on mount
-  useEffect(() => {
-    const initCsrf = async () => {
-      try {
-        const token = await csrf.getToken();
-        setCsrfToken(token);
-      } catch (error) {
-        console.error('[ConsultationForm] Failed to initialize CSRF token:', error);
-        setSubmitError('Security initialization failed. Please refresh and try again.');
-      }
-    };
-    initCsrf();
-  }, []);
 
   function handleChange(field: keyof FormData, value: string | string[] | boolean) {
     // 🔒 Sanitize text inputs before storing
@@ -149,38 +133,6 @@ export default function ConsultationForm() {
       return;
     }
 
-    let currentCsrfToken = csrfToken;
-    if (!currentCsrfToken) {
-      try {
-        currentCsrfToken = await csrf.getToken();
-        setCsrfToken(currentCsrfToken);
-      } catch (error) {
-        const errMsg = 'Security token unavailable. Please refresh and try again.';
-        setSubmitError(errMsg);
-        securityLogger.logCsrfValidationFailed();
-        return;
-      }
-    }
-
-    if (!(await csrf.validateToken(currentCsrfToken))) {
-      try {
-        currentCsrfToken = await csrf.refreshToken();
-        setCsrfToken(currentCsrfToken);
-      } catch (error) {
-        const errMsg = 'Security validation failed. Please refresh and try again.';
-        setSubmitError(errMsg);
-        securityLogger.logCsrfValidationFailed();
-        return;
-      }
-
-      if (!(await csrf.validateToken(currentCsrfToken))) {
-        const errMsg = 'Security validation failed. Please refresh and try again.';
-        setSubmitError(errMsg);
-        securityLogger.logCsrfValidationFailed();
-        return;
-      }
-    }
-
     setIsSubmitting(true);
     setSubmitError('');
 
@@ -206,7 +158,6 @@ export default function ConsultationForm() {
       contact_role: sanitizer.sanitizeText(formData.contactRole).trim(),
       approvers: sanitizer.sanitizeText(formData.approvers).trim(),
       partners: sanitizer.sanitizeText(formData.partners).trim(),
-      csrf_token: currentCsrfToken, // Include CSRF token with submission
     };
 
     // 🔒 Final validation of critical fields
@@ -221,7 +172,6 @@ export default function ConsultationForm() {
 
     try {
       // ✅ Use secure backend API instead of direct Supabase call
-      // No credentials exposed to frontend, CSRF token included
       const result = await apiClient.submitConsultation(payload);
 
       if (!result.success) {

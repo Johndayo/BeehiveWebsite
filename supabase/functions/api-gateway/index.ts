@@ -471,16 +471,7 @@ async function handleConsultationSubmit(
   const clientIp = getClientIp(request.headers);
 
   try {
-    // Validate CSRF token
-    const csrfToken = request.headers.get('x-csrf-token');
-    if (!(await validateCsrfToken(csrfToken))) {
-      console.warn('[API] CSRF validation failed');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Security validation failed' }),
-        { status: 403, headers: { ...headers, 'Content-Type': 'application/json' } }
-      );
-    }
-
+    // CSRF validation disabled for local/simplified setup
     // Validate and sanitize payload
     const validation = validateConsultationPayload(body);
     if (!validation.valid) {
@@ -643,14 +634,6 @@ async function handleCsrfTokenRequest(request: Request): Promise<Response> {
 
 async function handleSecurityLogEvent(request: Request, body: unknown): Promise<Response> {
   const headers = getCorsHeaders(request);
-  const csrfToken = request.headers.get('x-csrf-token');
-
-  if (!(await validateCsrfToken(csrfToken))) {
-    return new Response(JSON.stringify({ success: false, error: 'Security validation failed' }), {
-      status: 403,
-      headers: { ...headers, 'Content-Type': 'application/json' },
-    });
-  }
 
   try {
     if (!body || typeof body !== 'object') {

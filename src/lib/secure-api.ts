@@ -8,8 +8,6 @@
  * - Rate limiting server-side
  */
 
-import { csrf } from './csrf';
-
 export interface ConsultationPayload {
   organization_name: string;
   industry: string;
@@ -31,7 +29,6 @@ export interface ConsultationPayload {
   contact_role: string;
   approvers: string;
   partners: string;
-  csrf_token?: string;
 }
 
 export interface ApiResponse<T = any> {
@@ -104,12 +101,6 @@ export class SecureApiClient {
       ...((options.headers as Record<string, string>) || {}),
     };
 
-    // Add CSRF token for state-changing requests
-    if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method)) {
-      const csrfToken = await csrf.getToken();
-      headers['x-csrf-token'] = csrfToken;
-    }
-
     // Secure fetch options
     const fetchOptions: RequestInit = {
       ...options,
@@ -174,20 +165,11 @@ export class SecureApiClient {
    * Submit consultation form through secure API Gateway
    */
   async submitConsultation(payload: ConsultationPayload): Promise<ApiResponse> {
-    // Get CSRF token for submission
-    const csrfToken = await csrf.getToken();
-
-    // Include CSRF token in payload
-    const payloadWithCsrf: any = {
-      ...payload,
-      csrf_token: csrfToken,
-    };
-
     return this.request<{ id: string }>(
       '/consultation/submit',
       {
         method: 'POST',
-        body: JSON.stringify(payloadWithCsrf),
+        body: JSON.stringify(payload),
       }
     );
   }

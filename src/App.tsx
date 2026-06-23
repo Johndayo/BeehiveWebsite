@@ -7,7 +7,6 @@ import AboutPage from './pages/AboutPage';
 import TeamPage from './pages/TeamPage';
 import ConsultationPage from './pages/ConsultationPage';
 import NotFoundPage from './pages/NotFoundPage';
-import { csrf } from './lib/csrf';
 import { organizationSchema, faqSchema } from './data/seoSchema';
 
 export type Page = 'home' | 'team' | 'services' | 'about' | 'consultation';
@@ -21,14 +20,6 @@ export default function App() {
     if (VALID_PAGES.includes(hash as Page)) return hash as Page;
     return '404';
   });
-
-  // Initialize security features
-  useEffect(() => {
-    // CSRF protection initializes automatically
-    csrf.initialize().catch((err) =>
-      console.error('[App] CSRF initialization failed:', err)
-    );
-  }, []);
 
   // Update SEO based on current page
   useEffect(() => {
