@@ -85,7 +85,8 @@ export default defineConfig(({ mode }) => {
           target: 'https://hrxefopvcxhowrzyaqpz.supabase.co/functions/v1/api-gateway',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path,
+          // Keep the full sub-path intact so api-gateway receives /api/consultation/submit, /api/csrf-token, etc.
+          // No rewrite is needed because the edge function matches on /functions/v1/api-gateway/api/*.
         }
       }
     },
