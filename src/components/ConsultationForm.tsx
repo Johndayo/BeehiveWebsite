@@ -92,14 +92,23 @@ export default function ConsultationForm() {
   const [submitError, setSubmitError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+            ? (value as any).phone
+            : typeof (value as any).number === 'string'
+            ? (value as any).number
+            : String(value);
   function handleChange(field: keyof FormData, value: string | string[] | boolean) {
-    // 🔒 Sanitize text inputs before storing
-    let sanitizedValue = value;
-    if (typeof value === 'string') {
+    let sanitizedValue: string | string[] | boolean = value;
+
+    if (field === 'contactPhone') {
+      // Preserve the raw phone string from the phone picker.
+      if (typeof value !== 'string') {
+        sanitizedValue = String(value ?? '');
+      }
+    } else if (typeof value === 'string') {
       sanitizedValue = sanitizer.sanitizeText(value);
     }
 
-    setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
+    setFormData((prev) => ({ ...prev, [field]: sanitizedValue as any }));
     if (errors[field]) {
       setErrors((prev) => {
         const next = { ...prev };

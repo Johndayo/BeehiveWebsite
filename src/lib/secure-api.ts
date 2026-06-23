@@ -166,7 +166,7 @@ export class SecureApiClient {
    */
   async submitConsultation(payload: ConsultationPayload): Promise<ApiResponse> {
     return this.request<{ id: string }>(
-      '/consultation/submit',
+      '',
       {
         method: 'POST',
         body: JSON.stringify(payload),

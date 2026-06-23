@@ -101,7 +101,7 @@ export default function DecisionProcess({ formData, errors, onChange }: Props) {
               Phone Number <span className="text-sm font-normal text-navy-400">(optional)</span>
             </label>
             <PhoneCountrySelect
-              value={formData.contactPhone}
+              value={formData.contactPhone || ''}
               onChange={(val) => onChange('contactPhone', val)}
               onBlur={() => setPhoneTouched(true)}
               placeholder="555 123 4567"

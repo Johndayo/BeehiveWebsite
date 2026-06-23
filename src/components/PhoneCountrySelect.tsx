@@ -26,8 +26,8 @@ export default function PhoneCountrySelect({ value, onChange, placeholder = 'Ent
 
   // derive selected code and current phone part
   const trimmed = value.trim();
-  const selectedCode = trimmed.startsWith('+') ? trimmed.split(/\s+/)[0] : '';
-  const displayCode = selectedCode || '+1';
+  const selectedCode = trimmed.startsWith('+') ? trimmed.split(/\s+/)[0] : '+234';
+  const displayCode = selectedCode;
   const phonePart = trimmed.startsWith('+') ? trimmed.split(/\s+/).slice(1).join(' ') : trimmed;
 
   const placeholderMap: Record<string, string> = {
