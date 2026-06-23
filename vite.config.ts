@@ -75,10 +75,10 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
       cssCodeSplit: true,
 
-      // Target a wide range of older browsers and mobile devices for compatibility
-      target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+      // Target a widely compatible ES2015 baseline for older browsers and mobile devices
+      target: 'es2015',
       esbuild: {
-        target: 'es2020',
+        target: 'es2015',
       },
     },
 
