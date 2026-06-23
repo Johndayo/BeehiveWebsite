@@ -1,5 +1,6 @@
 import type { FormData, StepErrors } from '../../types/form';
 import CountrySelect from '../CountrySelect';
+import SearchableSelect from '../SearchableSelect';
 
 interface Props {
   formData: FormData;
@@ -60,21 +61,14 @@ export default function OrganizationInfo({ formData, errors, onChange }: Props) 
         )}
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-navy-700 mb-1.5">
-          Industry / Sector
-        </label>
-        <select
-          value={formData.industry}
-          onChange={(e) => onChange('industry', e.target.value)}
-          className="w-full px-4 py-3 bg-white border border-navy-200 rounded-lg text-navy-900 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200 transition-colors appearance-none"
-        >
-          <option value="">Select an industry</option>
-          {INDUSTRIES.map((ind) => (
-            <option key={ind} value={ind}>{ind}</option>
-          ))}
-        </select>
-      </div>
+      <SearchableSelect
+        label="Industry / Sector"
+        options={INDUSTRIES}
+        value={formData.industry}
+        onChange={(val) => onChange('industry', val)}
+        placeholder="Select an industry"
+        error={errors.industry}
+      />
 
       {formData.industry === 'Other (Specify)' && (
         <div className="animate-fade-in">
@@ -111,21 +105,14 @@ export default function OrganizationInfo({ formData, errors, onChange }: Props) 
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-navy-700 mb-1.5">
-          Number of Employees
-        </label>
-        <select
-          value={formData.employees}
-          onChange={(e) => onChange('employees', e.target.value)}
-          className="w-full px-4 py-3 bg-white border border-navy-200 rounded-lg text-navy-900 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200 transition-colors appearance-none"
-        >
-          <option value="">Select range</option>
-          {EMPLOYEE_RANGES.map((r) => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
-      </div>
+      <SearchableSelect
+        label="Number of Employees"
+        options={EMPLOYEE_RANGES}
+        value={formData.employees}
+        onChange={(val) => onChange('employees', val)}
+        placeholder="Select range"
+        error={errors.employees}
+      />
     </div>
   );
 }

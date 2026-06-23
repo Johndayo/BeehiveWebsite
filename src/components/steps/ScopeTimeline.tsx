@@ -1,5 +1,6 @@
 import { CheckCircle2 } from 'lucide-react';
 import type { FormData, StepErrors } from '../../types/form';
+import SearchableSelect from '../SearchableSelect';
 
 interface Props {
   formData: FormData;
@@ -42,21 +43,14 @@ export default function ScopeTimeline({ formData, errors, onChange }: Props) {
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-navy-700 mb-1.5">
-          Proposed Timeline
-        </label>
-        <select
-          value={formData.timeline}
-          onChange={(e) => onChange('timeline', e.target.value)}
-          className="w-full px-4 py-3 bg-white border border-navy-200 rounded-lg text-navy-900 hover:border-navy-300 focus:border-navy-600 focus:ring-1 focus:ring-navy-200 transition-colors appearance-none"
-        >
-          <option value="">Select a timeline</option>
-          {TIMELINES.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-      </div>
+      <SearchableSelect
+        label="Proposed Timeline"
+        options={TIMELINES}
+        value={formData.timeline}
+        onChange={(val) => onChange('timeline', val)}
+        placeholder="Select a timeline"
+        error={errors.timeline}
+      />
 
       <div>
         <label className="block text-sm font-medium text-navy-700 mb-2">
