@@ -6,20 +6,15 @@ import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
 import TeamPage from './pages/TeamPage';
 import ConsultationPage from './pages/ConsultationPage';
-import SettingsPage from './pages/SettingsPage';
-import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
-import { useAuth } from './hooks/useAuth';
 import { csrf } from './lib/csrf';
 import { organizationSchema, faqSchema } from './data/seoSchema';
 
-export type Page = 'home' | 'team' | 'services' | 'about' | 'consultation' | 'settings';
+export type Page = 'home' | 'team' | 'services' | 'about' | 'consultation';
 
-const VALID_PAGES: Page[] = ['home', 'team', 'services', 'about', 'consultation', 'settings'];
+const VALID_PAGES: Page[] = ['home', 'team', 'services', 'about', 'consultation'];
 
 export default function App() {
-  const { user, loading: authLoading, signIn, signOut, resetPassword } = useAuth();
-
   const [page, setPage] = useState<Page | '404'>(() => {
     const hash = window.location.hash.replace('#', '');
     if (!hash || hash === '') return 'home';
@@ -62,11 +57,6 @@ export default function App() {
         title: 'Book a Consultation | Beehive Associates',
         description: 'Schedule a free consultation with our expert consultants to discuss your organization\'s strategic and operational challenges.',
         keywords: ['consultation', 'book consultation', 'free consultation', 'consult with us', 'business consultation'],
-      },
-      settings: {
-        title: 'Settings | Beehive Associates',
-        description: 'Manage your account settings and preferences.',
-        keywords: ['settings', 'account settings'],
       },
       '404': {
         title: 'Page Not Found | Beehive Associates',
@@ -167,9 +157,6 @@ export default function App() {
     }
   }
 
-  const requiresAuth = page === 'settings';
-  const showLogin = requiresAuth && !authLoading && !user;
-
   return (
     <div className="min-h-screen flex flex-col">
       <a
@@ -182,24 +169,12 @@ export default function App() {
         currentPage={page}
         onNavigate={navigate}
         onScrollTo={scrollToSection}
-        isAdmin={!!user}
-        onSignOut={signOut}
       />
       <div id="main-content">
         {page === '404' ? (
           <NotFoundPage onNavigate={navigate} />
         ) : page === 'consultation' ? (
           <ConsultationPage />
-        ) : page === 'settings' ? (
-          showLogin ? (
-            <LoginPage onLogin={signIn} onResetPassword={resetPassword} />
-          ) : authLoading ? (
-            <main className="flex-1 flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-navy-300 border-t-navy-600 rounded-full animate-spin" />
-            </main>
-          ) : (
-            <SettingsPage onSignOut={signOut} userEmail={user?.email} />
-          )
         ) : page === 'team' ? (
           <TeamPage />
         ) : page === 'about' ? (

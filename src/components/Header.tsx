@@ -6,8 +6,6 @@ interface HeaderProps {
   currentPage: Page | '404';
   onNavigate: (page: Page) => void;
   onScrollTo: (sectionId: string) => void;
-  isAdmin?: boolean;
-  onSignOut?: () => void;
 }
 
 export default function Header({ currentPage, onNavigate, onScrollTo }: HeaderProps) {
