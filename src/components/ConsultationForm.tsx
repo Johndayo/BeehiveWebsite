@@ -92,17 +92,19 @@ export default function ConsultationForm() {
   const [submitError, setSubmitError] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-            ? (value as any).phone
-            : typeof (value as any).number === 'string'
-            ? (value as any).number
-            : String(value);
   function handleChange(field: keyof FormData, value: string | string[] | boolean) {
     let sanitizedValue: string | string[] | boolean = value;
 
     if (field === 'contactPhone') {
-      // Preserve the raw phone string from the phone picker.
-      if (typeof value !== 'string') {
-        sanitizedValue = String(value ?? '');
+      const processedValue =
+        typeof value === 'object' && value !== null && 'phone' in value
+          ? (value as { phone?: unknown }).phone
+          : value;
+
+      if (typeof processedValue === 'string') {
+        sanitizedValue = processedValue;
+      } else {
+        sanitizedValue = String(processedValue ?? '');
       }
     } else if (typeof value === 'string') {
       sanitizedValue = sanitizer.sanitizeText(value);
