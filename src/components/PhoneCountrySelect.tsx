@@ -18,7 +18,7 @@ function flagSrcSetFor(countryName: string) {
   return getFlagSrcSet(countryName);
 }
 
-export default function PhoneCountrySelect({ value, onChange, placeholder = 'Phone number', onBlur }: Props) {
+export default function PhoneCountrySelect({ value, onChange, placeholder = 'Enter phone number', onBlur }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -26,8 +26,19 @@ export default function PhoneCountrySelect({ value, onChange, placeholder = 'Pho
 
   // derive selected code and current phone part
   const trimmed = value.trim();
-  const selectedCode = trimmed.startsWith('+') ? trimmed.split(/\s+/)[0] : '+1';
+  const selectedCode = trimmed.startsWith('+') ? trimmed.split(/\s+/)[0] : '';
+  const displayCode = selectedCode || '+1';
   const phonePart = trimmed.startsWith('+') ? trimmed.split(/\s+/).slice(1).join(' ') : trimmed;
+
+  const placeholderMap: Record<string, string> = {
+    '+234': '812 345 6789',
+    '+44': '7123 456789',
+    '+1': '555 123 4567',
+  };
+
+  const dynamicPlaceholder = trimmed
+    ? placeholderMap[selectedCode] ?? placeholder
+    : placeholder;
 
   const items = Object.entries(countryDialCodes).map(([country, code]) => ({ country, code }));
   const filtered = query ? items.filter(i => (i.country + ' ' + i.code).toLowerCase().includes(query.toLowerCase())) : items;
@@ -67,9 +78,9 @@ export default function PhoneCountrySelect({ value, onChange, placeholder = 'Pho
         <input
           type="tel"
           value={phonePart}
-          onChange={(e) => onChange(`${selectedCode} ${e.target.value}`.trim())}
+          onChange={(e) => onChange(`${displayCode} ${e.target.value}`.trim())}
           onBlur={() => { if (onBlur) onBlur(); }}
-          placeholder={placeholder}
+          placeholder={dynamicPlaceholder}
           className="flex-1 px-4 py-3 bg-white border border-navy-200 rounded-r-lg text-navy-900 placeholder:text-navy-300"
           aria-label="Phone number"
         />
