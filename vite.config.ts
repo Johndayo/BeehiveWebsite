@@ -85,7 +85,7 @@ export default defineConfig(({ mode }) => {
           target: 'https://hrxefopvcxhowrzyaqpz.supabase.co/functions/v1/api-gateway',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/api/, ''),
+          rewrite: (path) => path,
         }
       }
     },
