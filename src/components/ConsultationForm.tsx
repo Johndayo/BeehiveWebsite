@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Send, Loader2 } from 'lucide-react';
 import { initialFormData } from '../types/form';
 import type { FormData, StepErrors } from '../types/form';

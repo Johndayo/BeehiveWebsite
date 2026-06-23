@@ -29,8 +29,8 @@ export default defineConfig(({ mode }) => {
       // Enable sourcemap for production error tracking (with obfuscation recommended)
       sourcemap: false,
 
-      // Minimize code with terser
-      minify: 'terser',
+      // Minify with esbuild for faster, lighter production bundles
+      minify: 'esbuild',
 
       // Performance: Code splitting strategy for better caching
       rollupOptions: {
@@ -75,8 +75,11 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
       cssCodeSplit: true,
 
-      // Target modern browsers for better compatibility
-      target: 'esnext',
+      // Target a wide range of older browsers and mobile devices for compatibility
+      target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+      esbuild: {
+        target: 'es2020',
+      },
     },
 
     server: {
