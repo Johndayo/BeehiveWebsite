@@ -6,7 +6,7 @@ import PhoneCountrySelect from '../PhoneCountrySelect';
 interface Props {
   formData: FormData;
   errors: StepErrors;
-  onChange: (field: keyof FormData, value: string) => void;
+  onChange: (field: keyof FormData, value: string | string[] | boolean) => void;
 }
 
 function isValidEmail(email: string): boolean {
