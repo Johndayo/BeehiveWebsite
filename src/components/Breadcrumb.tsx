@@ -13,13 +13,13 @@ interface BreadcrumbProps {
 }
 
 // Export for reuse in other components
-export const pageLabels: Record<Page | 'home', string> = {
+export const pageLabels: Record<Page, string> = {
   home: 'Home',
   team: 'Team',
   services: 'Services',
   about: 'About',
   consultation: 'Book Consultation',
-  settings: 'Settings',
+  clients: 'Our Clients',
 };
 
 export default function Breadcrumb({ items, onNavigate, className = '' }: BreadcrumbProps) {
@@ -70,7 +70,7 @@ export function getBreadcrumbItems(currentPage: Page): BreadcrumbItem[] {
     services: [{ label: pageLabels.services, page: 'services' }],
     about: [{ label: pageLabels.about, page: 'about' }],
     consultation: [{ label: pageLabels.consultation, page: 'consultation' }],
-    settings: [{ label: pageLabels.settings, page: 'settings' }],
+    clients: [{ label: pageLabels.clients, page: 'clients' }],
   };
   return breadcrumbs[currentPage] || [];
 }

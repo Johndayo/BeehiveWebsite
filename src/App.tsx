@@ -6,12 +6,13 @@ import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
 import TeamPage from './pages/TeamPage';
 import ConsultationPage from './pages/ConsultationPage';
+import ClientsAndTrainings from './pages/ClientsAndTrainings';
 import NotFoundPage from './pages/NotFoundPage';
 import { organizationSchema, faqSchema } from './data/seoSchema';
 
-export type Page = 'home' | 'team' | 'services' | 'about' | 'consultation';
+export type Page = 'home' | 'team' | 'services' | 'about' | 'consultation' | 'clients';
 
-const VALID_PAGES: Page[] = ['home', 'team', 'services', 'about', 'consultation'];
+const VALID_PAGES: Page[] = ['home', 'team', 'services', 'about', 'consultation', 'clients'];
 
 export default function App() {
   const [page, setPage] = useState<Page | '404'>(() => {
@@ -48,6 +49,11 @@ export default function App() {
         title: 'Book a Consultation | Beehive Associates',
         description: 'Schedule a free consultation with our expert consultants to discuss your organization\'s strategic and operational challenges.',
         keywords: ['consultation', 'book consultation', 'free consultation', 'consult with us', 'business consultation'],
+      },
+      clients: {
+        title: 'Our Clients | Beehive Associates',
+        description: 'Discover the organisations Beehive Associates has supported through business partnerships and training engagements.',
+        keywords: ['clients', 'trainings', 'partners', 'beehive associates', 'business collaborations'],
       },
       '404': {
         title: 'Page Not Found | Beehive Associates',
@@ -170,6 +176,8 @@ export default function App() {
           <TeamPage />
         ) : page === 'about' ? (
           <AboutPage onNavigate={navigate} />
+        ) : page === 'clients' ? (
+          <ClientsAndTrainings />
         ) : (
           <HomePage onNavigate={navigate} />
         )}
