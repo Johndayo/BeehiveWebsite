@@ -13,6 +13,14 @@ type TeamMember = {
 
 const TEAM_MEMBERS: TeamMember[] = [
   {
+    id: 'segun-lawal',
+    name: 'Segun Lawal',
+    title: 'Co-Founder & Tech Lead',
+    bio: `Segun Lawal is a software engineer and technology leader with extensive experience building scalable web architectures and decentralized systems. He specializes in full-stack development and optimization, ensuring high performance across all digital platforms. As a co-founder of Beehive, he drives the core technical roadmap and system layout.`,
+    image: '/segun.jpg', // Make sure to match this name when you add his photo asset later
+    linkedin: '', // Leave blank or add his link inside the string here later
+  },
+  {
     id: 'bentex-torlafia',
     name: 'Bentex Torlafia',
     title: 'IP Law Consultant & Academic',
