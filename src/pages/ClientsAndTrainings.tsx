@@ -2,18 +2,18 @@ import { motion } from 'framer-motion';
 
 const companyPartners = [
   {
-    name: "Ercas Integrated Solutions",
-    logo: '/src/assets/logos/ercas.png',
+    name: 'Ercas Integrated Solutions',
+    logo: '/Logos/ercas.png',
     description: 'Technology, digital transformation, and operational support for service-driven organisations.',
   },
   {
     name: 'Agri Course',
-    logo: '/src/assets/logos/agri-course.png',
+    logo: null, // Set to null for now so it shows a clean fallback text box until you drop in a file!
     description: 'Agribusiness advisory and capacity building for agricultural value chain development.',
   },
   {
     name: 'First Forty Hotel',
-    logo: '/src/assets/logos/first-forty-hotel.png',
+    logo: '/Logos/firstforty.png',
     description: 'Hospitality strategy, process improvement, and service delivery consulting.',
   },
 ];
@@ -21,17 +21,17 @@ const companyPartners = [
 const trainingClients = [
   {
     name: 'NNPC',
-    logo: '/src/assets/logos/nnpc.png',
+    logo: '/Logos/nnpc.png',
     description: 'Strategic training for petroleum sector leadership, governance, and performance management.',
   },
   {
     name: 'PTDF',
-    logo: '/src/assets/logos/ptdf.png',
+    logo: '/Logos/ptdf.png', // Changed from PTDF.png to lowercase ptdf.png to match your exact file name in image_f48e64.png!
     description: 'Capacity-building workshops for talent development and industry-focused training programmes.',
   },
   {
     name: 'First Forty Hotel',
-    logo: '/src/assets/logos/first-forty-hotel.png',
+    logo: '/Logos/firstforty.png',
     description: 'Hospitality and operations training designed to elevate guest experience and service standards.',
   },
   {
@@ -41,7 +41,7 @@ const trainingClients = [
   },
   {
     name: 'Heal The Youth Foundation',
-    logo: '/src/assets/logos/heal-the-youth-foundation.png',
+    logo: '/Logos/healyouth.png',
     description: 'Mission-aligned workshops that support youth empowerment, social impact, and organisational growth.',
   },
 ];
@@ -62,8 +62,9 @@ const cardVariants: Record<string, any> = {
 
 export default function ClientsAndTrainings() {
   return (
-    <main className="flex-1 bg-stone-50">
-      <section className="relative overflow-hidden bg-white/80">
+    <main className="flex-1 bg-zinc-50">
+      {/* Header Section */}
+      <section className="relative overflow-hidden bg-zinc-50">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_22%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.14),_transparent_24%)]" />
 
@@ -87,6 +88,7 @@ export default function ClientsAndTrainings() {
         </div>
       </section>
 
+      {/* Corporate Partners Section */}
       <section className="py-16 sm:py-20">
         <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
           <div className="grid gap-6 lg:grid-cols-[1.1fr_minmax(280px,0.7fr)] items-end">
@@ -114,14 +116,22 @@ export default function ClientsAndTrainings() {
               <motion.article
                 key={partner.name}
                 variants={cardVariants}
-                className="rounded-[2rem] border border-navy-100/70 bg-white p-8 shadow-sm flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="rounded-[2rem] border border-zinc-200/70 bg-white p-8 shadow-sm flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
-                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-stone-100 shadow-sm">
-                  <img
-                    src={partner.logo ?? '/src/assets/logos/placeholder.png'}
-                    alt={`${partner.name} logo`}
-                    className="max-h-16 object-contain"
-                  />
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-zinc-100 shadow-sm border border-zinc-200/40 p-4">
+                  {partner.logo ? (
+                    <img
+                      src={partner.logo}
+                      alt={`${partner.name} logo`}
+                      className="max-h-16 max-w-full object-contain"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center text-center px-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-navy-700 leading-tight">
+                        {partner.name}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <h3 className="mt-10 text-xl font-semibold text-navy-950">{partner.name}</h3>
                 <p className="mt-4 text-sm text-navy-600 leading-relaxed">{partner.description}</p>
@@ -131,18 +141,19 @@ export default function ClientsAndTrainings() {
         </div>
       </section>
 
-      <section className="py-16 sm:py-20 bg-navy-950 text-white">
+      {/* Training Clients Section */}
+      <section className="py-16 sm:py-20 bg-zinc-50 text-navy-950">
         <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
           <div className="grid gap-6 lg:grid-cols-[1.1fr_minmax(280px,0.7fr)] items-end">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-teal-300 mb-3">
+              <p className="text-xs uppercase tracking-[0.35em] text-accent-500 mb-3">
                 Trainings Conducted by Beehive Associates
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl font-bold text-navy-950 leading-tight">
                 Empowering teams through practical learning and institutional capability building.
               </h2>
             </div>
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-navy-600 leading-relaxed">
               Our training engagements cover governance, energy sector operations, hospitality excellence, and youth development for public and private institutions.
             </p>
           </div>
@@ -158,25 +169,25 @@ export default function ClientsAndTrainings() {
               <motion.article
                 key={client.name}
                 variants={cardVariants}
-                className="rounded-[2rem] border border-white/10 bg-slate-900/95 p-8 shadow-2xl shadow-slate-950/20 flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1 hover:border-teal-400/40"
+                className="rounded-[2rem] border border-zinc-200/70 bg-white p-8 shadow-sm flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
-                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/5 shadow-inner">
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-zinc-100 shadow-sm border border-zinc-200/40 p-4">
                   {client.logo ? (
                     <img
                       src={client.logo}
                       alt={`${client.name} logo`}
-                      className="max-h-16 object-contain"
+                      className="max-h-16 max-w-full object-contain"
                     />
                   ) : (
-                    <div className="h-20 w-20 rounded-3xl border border-teal-300/20 bg-white/5 flex items-center justify-center px-4">
-                      <span className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-200 leading-tight">
+                    <div className="flex items-center justify-center text-center px-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-navy-700 leading-tight">
                         {client.name}
                       </span>
                     </div>
                   )}
                 </div>
-                <h3 className="mt-10 text-xl font-semibold text-white">{client.name}</h3>
-                <p className="mt-4 text-sm text-slate-300 leading-relaxed">{client.description}</p>
+                <h3 className="mt-10 text-xl font-semibold text-navy-950">{client.name}</h3>
+                <p className="mt-4 text-sm text-navy-600 leading-relaxed">{client.description}</p>
               </motion.article>
             ))}
           </motion.div>
