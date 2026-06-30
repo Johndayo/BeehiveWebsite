@@ -15,10 +15,16 @@ const TEAM_MEMBERS: TeamMember[] = [
   {
     id: 'segun-lawal',
     name: 'Segun Lawal',
-    title: 'Co-Founder & Tech Lead',
-    bio: `Segun Lawal is a software engineer and technology leader with extensive experience building scalable web architectures and decentralized systems. He specializes in full-stack development and optimization, ensuring high performance across all digital platforms. As a co-founder of Beehive, he drives the core technical roadmap and system layout.`,
-    image: '/segun.jpg', // Make sure to match this name when you add his photo asset later
-    linkedin: '', // Leave blank or add his link inside the string here later
+    title: 'Management Consultant (HR Innovations & Strategy)',
+    bio: `Segun is a seasoned Management Consultant specializing in HR innovations and strategy. His extensive experience underscores his proficiency in leveraging innovative approaches to enhance organizational performance and efficiency within the realm of human resource Management. He has worked at top management level across various industries, shaping high-performing teams and delivering value through people-focused programs. He’s a graduate of Marketing, has a Chartered Post graduate Diploma in Marketing from National Institute of Marketing of Nigeria and holds an MBA in Human Resource Management. He’s a fully Chartered member of the Chartered Institute of Personnel management in Nigeria CIPMN, a Full member of National Institute of Training and Development NITAD, a Member Chartered Institute of Human Resource Management Nigeria CIHRM also a Learning and Development Professional LDP and a Fellow College of Healthcare Administrators of Nigeria FCHAN.
+
+Segun has undergone several training courses in HR management, AI for HR, ISO training, and Leadership courses. Segun is a facilitator and has trained many youths, graduates, and professionals in Business analysis, Sales & Marketing, Risk management, soft skills training, entrepreneurship, and capacity building programs.
+
+He has served as a Panelist with Financial Institution Training Company (FITC) for Staff promotion exercises. He has done same with notable Federal Government Financial Institutions like Federal Mortgage Bank Nigeria FMBN, National Insurance Commission NAICOM etc. Segun has worked on several training projects with the Central Bank of Nigeria (CBN), Nigeria Deposit Insurance Corporation (NDIC), Transmission Company of Nigeria (TCN), Nigeria Civil Aviation Authority, NIRSAL, Nigerian Society of Engineers (NSE), NNPC, ENSERV, Department of State Services DSS, Nigerian Communications Commission NCC, Bank of Industry BOI, Nigerian Airspace Management Agency NAMA to mention a few.
+
+Segun is a Facilitator with Piston and Fusion Business Academy, Lagos, Training Heights Ltd Abuja, FITC Abuja, West African Institute for Financial and Economic Management WAIFEM; he was also a Facilitator for the Young Africa works Project implemented by IITA and funded by MASTERCARD. He was a Facilitator at the NNPC ENSERV Leadership Summit.`,
+    image: '/segun.jpg',
+    linkedin: 'https://www.linkedin.com/in/segun-lawal-animn-cpgd-mba-hr-mnitad-ldp-mcipm-03965460/',
   },
   {
     id: 'bentex-torlafia',
